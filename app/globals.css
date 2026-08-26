@@ -1,0 +1,146 @@
+@import "tailwindcss";
+
+:root {
+  /* Identidade Pulso: preto e vermelho, fixa em todo o app — inclusive no
+     painel interno do consultor, nao so na apresentacao publicada. */
+  --app-bg: #0a0a0a;
+  --app-panel: #131313;
+  --app-panel-2: #191919;
+  --app-border: #2a2a2a;
+  --app-text: #f5f5f5;
+  --app-muted: #9aa0a6;
+  --app-accent: #e0263f;
+  --app-accent-2: #38d39f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--app-bg);
+  color: var(--app-text);
+  font-family: var(--f-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--f-playfair), Georgia, serif;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* Campos do formulario do painel */
+.field {
+  width: 100%;
+  background: var(--app-panel-2);
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  color: var(--app-text);
+  padding: 11px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.field:focus {
+  border-color: var(--app-accent);
+  box-shadow: 0 0 0 3px rgba(224, 38, 63, 0.18);
+}
+.field::placeholder {
+  color: #5f6a7d;
+}
+textarea.field {
+  min-height: 92px;
+  resize: vertical;
+  line-height: 1.5;
+}
+.label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--app-muted);
+  margin-bottom: 6px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.spinner {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.fade-up {
+  animation: fadeUp 0.3s ease both;
+}
+
+/* -------------------------- apresentacao publicada ------------------------ */
+
+.deck-section {
+  min-height: 100vh;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 6vh 8vw;
+  position: relative;
+}
+.deck-scroll {
+  height: 100vh;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  background: #0a0a0a;
+}
+
+@keyframes chatIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.chat-bubble-in {
+  animation: chatIn 0.25s ease both;
+}
+
+@keyframes typingDot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.25;
+  }
+  30% {
+    opacity: 1;
+  }
+}
+.typing-dot {
+  animation: typingDot 1s ease-in-out infinite;
+}
