@@ -13,15 +13,22 @@ export const maxDuration = 30;
  */
 export async function GET(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const treinamento = await getPublishedTreinamento(slug);
-  if (!treinamento?.spec) return NextResponse.json({ error: "Treinamento não encontrado" }, { status: 404 });
+  try {
+    const treinamento = await getPublishedTreinamento(slug);
+    if (!treinamento?.spec) return NextResponse.json({ error: "Treinamento não encontrado" }, { status: 404 });
 
-  const buffer = await exportTreinamentoPptx(treinamento.spec);
+    const buffer = await exportTreinamentoPptx(treinamento.spec);
 
-  return new NextResponse(new Uint8Array(buffer), {
-    headers: {
-      "content-type": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-      "content-disposition": `attachment; filename="${slug}.pptx"`,
-    },
-  });
+    return new NextResponse(new Uint8Array(buffer), {
+      headers: {
+        "content-type": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "content-disposition": `attachment; filename="${slug}.pptx"`,
+      },
+    });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Falha ao exportar a apresentação." },
+      { status: 500 },
+    );
+  }
 }

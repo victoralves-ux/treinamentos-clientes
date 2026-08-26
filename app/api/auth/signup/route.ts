@@ -34,25 +34,34 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "A senha precisa ter ao menos 8 caracteres." }, { status: 400 });
   }
 
-  const admin = supabaseAdmin();
-  const { error } = await admin.auth.admin.createUser({
-    email: cleanEmail,
-    password,
-    email_confirm: true,
-    user_metadata: { name: name?.trim() || cleanEmail.split("@")[0] },
-  });
+  // Qualquer falha aqui (chave ausente, projeto errado, rede) precisa virar
+  // JSON, nunca a pagina de erro HTML padrao — o formulario so sabe ler JSON.
+  try {
+    const admin = supabaseAdmin();
+    const { error } = await admin.auth.admin.createUser({
+      email: cleanEmail,
+      password,
+      email_confirm: true,
+      user_metadata: { name: name?.trim() || cleanEmail.split("@")[0] },
+    });
 
-  if (error) {
-    const jaExiste = /already|registered|exists/i.test(error.message);
+    if (error) {
+      const jaExiste = /already|registered|exists/i.test(error.message);
+      return NextResponse.json(
+        {
+          error: jaExiste
+            ? "Este e-mail já possui conta. Faça login ou peça a redefinição da senha ao administrador."
+            : error.message,
+        },
+        { status: jaExiste ? 409 : 500 },
+      );
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
     return NextResponse.json(
-      {
-        error: jaExiste
-          ? "Este e-mail já possui conta. Faça login ou peça a redefinição da senha ao administrador."
-          : error.message,
-      },
-      { status: jaExiste ? 409 : 500 },
+      { error: err instanceof Error ? err.message : "Falha ao criar conta." },
+      { status: 500 },
     );
   }
-
-  return NextResponse.json({ ok: true });
 }

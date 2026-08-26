@@ -7,12 +7,19 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const treinamentos = await listTreinamentos({
-    q: url.searchParams.get("q") ?? undefined,
-    status: url.searchParams.get("status") ?? undefined,
-  });
-  return NextResponse.json(treinamentos);
+  try {
+    const url = new URL(req.url);
+    const treinamentos = await listTreinamentos({
+      q: url.searchParams.get("q") ?? undefined,
+      status: url.searchParams.get("status") ?? undefined,
+    });
+    return NextResponse.json(treinamentos);
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Falha ao listar treinamentos." },
+      { status: 500 },
+    );
+  }
 }
 
 export async function POST(req: Request) {
@@ -28,6 +35,13 @@ export async function POST(req: Request) {
     );
   }
 
-  const treinamento = await createTreinamento({ consultantId: profile.id, business: parsed.data });
-  return NextResponse.json({ id: treinamento.id, slug: treinamento.slug });
+  try {
+    const treinamento = await createTreinamento({ consultantId: profile.id, business: parsed.data });
+    return NextResponse.json({ id: treinamento.id, slug: treinamento.slug });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Falha ao salvar o treinamento." },
+      { status: 500 },
+    );
+  }
 }
