@@ -48,11 +48,11 @@ export function GenerateView({
   const started = useRef(false);
 
   /**
-   * Consome uma etapa em SSE. A geracao vai em duas requisicoes (planejar e
-   * construir) porque cada funcao serverless tem teto de 60s.
+   * Consome uma etapa em SSE. A geracao vai em tres requisicoes (planejar,
+   * etapas 1+2, etapa 3) porque cada funcao serverless tem teto de 60s.
    */
   const consume = useCallback(
-    async (path: string, esperado: "plan" | "done", body?: unknown) => {
+    async (path: string, esperado: "plan" | "conteudo1" | "done", body?: unknown) => {
       const abort = new AbortController();
       const limite = setTimeout(() => abort.abort(), 80_000);
 
@@ -135,7 +135,8 @@ export function GenerateView({
 
     try {
       const { plan } = await consume("plan", "plan");
-      const done = await consume("build", "done", { plan });
+      const { parcial } = await consume("conteudo1", "conteudo1", { plan });
+      const done = await consume("conteudo2", "done", { plan, parcial });
       setUrl(String(done.url ?? ""));
       setWarnings((done.warnings as string[]) ?? []);
       setState("done");

@@ -1,6 +1,6 @@
 import { generateJson } from "./ai";
 import { updateTreinamentoAdmin } from "./repo";
-import { contentPrompt, planPrompt, repairPrompt } from "./prompt";
+import { contentPrompt1, contentPrompt2, planPrompt, repairPrompt } from "./prompt";
 import { planSchema, type Business, type Plan, type TreinamentoSpec } from "./schema";
 import { normalize, validate } from "./validate";
 
@@ -13,10 +13,19 @@ export type Emit = (event: {
 }) => void;
 
 /**
- * O pipeline roda em duas requisicoes separadas (planejar e construir), igual
- * aos outros geradores da Pulso: funcoes serverless tem teto de 60s no plano
- * Hobby da Vercel, e as duas chamadas de IA somadas passariam disso.
+ * O pipeline roda em TRES requisicoes separadas (planejar, etapas 1+2, etapa
+ * 3), igual aos outros geradores da Pulso mas com um passo a mais: funcoes
+ * serverless tem teto de 60s no plano Hobby da Vercel, sem excecao, e gerar
+ * etapa1+etapa2+etapa3+materialApoio numa chamada so estourava esse teto —
+ * a etapa 3 (roleplay com conversa real) e a parte mais pesada, entao ganhou
+ * a propria requisicao.
  */
+
+export interface ConteudoParcial {
+  etapa1: unknown;
+  etapa2: unknown;
+  materialApoio: unknown;
+}
 
 /* ----------------------- etapa 1: analisar e planejar --------------------- */
 
@@ -55,27 +64,43 @@ export async function planTreinamento(business: Business, emit: Emit): Promise<P
   return plan;
 }
 
-/* ------------------- etapa 2: escrever, validar e publicar ---------------- */
+/* --------------- etapa 2: escrever etapas 1+2 e material de apoio --------- */
 
-export async function buildTreinamento(
+export async function buildConteudo1(business: Business, plan: Plan, emit: Emit): Promise<ConteudoParcial> {
+  emit({ step: "conteudo", state: "running" });
+  const prompts = contentPrompt1(business, plan);
+  const raw = (await generateJson(prompts.system, prompts.user, 4000, "conteudo")) as Record<string, unknown>;
+  emit({ step: "conteudo", state: "done", detail: "Etapas 1 e 2 escritas" });
+
+  return {
+    etapa1: raw.etapa1 ?? {},
+    etapa2: raw.etapa2 ?? {},
+    materialApoio: raw.materialApoio ?? {},
+  };
+}
+
+/* ------------- etapa 3: escrever roleplay, validar e publicar ------------- */
+
+export async function buildConteudo2(
   id: string,
   business: Business,
   plan: Plan,
+  parcial: ConteudoParcial,
   emit: Emit,
 ): Promise<TreinamentoSpec> {
-  emit({ step: "conteudo", state: "running" });
-  const prompts = contentPrompt(business, plan);
-  const rawContent = (await generateJson(prompts.system, prompts.user, 6000, "conteudo")) as Record<string, unknown>;
-  emit({ step: "conteudo", state: "done", detail: "Etapas 1, 2 e 3 escritas" });
+  emit({ step: "roleplay", state: "running" });
+  const prompts = contentPrompt2(business, plan, parcial);
+  const rawEtapa3 = (await generateJson(prompts.system, prompts.user, 4000, "conteudo")) as Record<string, unknown>;
+  emit({ step: "roleplay", state: "done", detail: "Roleplay de WhatsApp e ligação escrito" });
 
   emit({ step: "montagem", state: "running" });
   let candidate: unknown = normalize(
     {
       meta: plan.meta,
-      etapa1: rawContent.etapa1 ?? {},
-      etapa2: rawContent.etapa2 ?? {},
-      etapa3: rawContent.etapa3 ?? {},
-      materialApoio: rawContent.materialApoio ?? {},
+      etapa1: parcial.etapa1,
+      etapa2: parcial.etapa2,
+      etapa3: rawEtapa3.etapa3 ?? {},
+      materialApoio: parcial.materialApoio,
     },
     business,
   );

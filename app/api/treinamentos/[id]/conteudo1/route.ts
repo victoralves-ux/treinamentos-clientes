@@ -1,5 +1,5 @@
-import { buildTreinamento } from "@/lib/pipeline";
-import { getTreinamentoAdmin, updateTreinamentoAdmin } from "@/lib/repo";
+import { buildConteudo1 } from "@/lib/pipeline";
+import { updateTreinamentoAdmin } from "@/lib/repo";
 import { planSchema } from "@/lib/schema";
 import { authorizeTreinamento, sseStream } from "@/lib/sse";
 
@@ -7,13 +7,12 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-/** Etapa 2: escreve o conteudo, valida, corrige e publica. */
+/** Etapa 2: escreve as etapas 1, 2 e o material de apoio. */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const auth = await authorizeTreinamento(id);
   if ("error" in auth) return auth.error;
 
-  // O plano vem do navegador; se nao vier, usamos o que a etapa 1 gravou.
   const body = (await req.json().catch(() => ({}))) as { plan?: unknown };
   const salvo = (auth.treinamento.business as Record<string, unknown>)?.__plan;
   const plan = planSchema.safeParse(body.plan ?? salvo);
@@ -25,14 +24,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   return sseStream(id, async (emit, send) => {
     try {
       await updateTreinamentoAdmin(id, { status: "gerando", error: null });
-      await buildTreinamento(id, auth.business, plan.data, emit);
-      const saved = await getTreinamentoAdmin(id);
-      send({
-        type: "done",
-        slug: saved?.slug ?? auth.treinamento.slug,
-        url: `/t/${saved?.slug ?? auth.treinamento.slug}`,
-        warnings: saved?.issues ?? [],
+      const parcial = await buildConteudo1(auth.business, plan.data, emit);
+
+      // Guarda o parcial pra retomar a etapa 3 mesmo se o navegador fechar
+      // entre as duas chamadas — mesmo padrao usado para o plano.
+      await updateTreinamentoAdmin(id, {
+        business: { ...auth.treinamento.business, __plan: plan.data, __parcial: parcial },
       });
+
+      send({ type: "conteudo1", plan: plan.data, parcial });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       await updateTreinamentoAdmin(id, { status: "erro", error: message });

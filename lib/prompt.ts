@@ -79,18 +79,26 @@ Planeje o escopo do treinamento.`;
   return { system, user };
 }
 
-export function contentPrompt(business: Business, plan: Plan) {
+/**
+ * A redacao do conteudo roda em DUAS chamadas de IA, nao uma so: uma unica
+ * chamada gerando etapa1+etapa2+etapa3+materialApoio de uma vez demorava
+ * demais e estourava o limite de 60s da funcao serverless (plano Hobby da
+ * Vercel, sem excecao — nao da pra simplesmente subir esse teto). Cada
+ * metade fica bem menor e sobra folga real de tempo.
+ */
+
+export function contentPrompt1(business: Business, plan: Plan) {
   const ctxParsed = business.context ? contextSchema.safeParse(business.context) : null;
   const briefing = ctxParsed?.success ? contextBriefing(ctxParsed.data) : "";
-  const exemplos = ctxParsed?.success ? contextExemplos(ctxParsed.data) : "";
 
-  const system = `Voce escreve o conteudo completo de uma apresentacao de treinamento comercial da Pulso.
+  const system = `Voce escreve a primeira metade do conteudo de uma apresentacao de treinamento
+comercial da Pulso — etapa 1, etapa 2 e o material de apoio. A etapa 3
+(roleplay) e escrita em outra chamada separada, depois desta.
 ${BRAND_BRIEF}
 ${ETAPAS_BRIEF}
 
-Escopo ja definido pelo planejamento: ${plan.outline.dores} dor(es),
-${plan.outline.estrategias} estrategia(s) executada(s), ${plan.outline.cenariosWhatsapp}
-cenario(s) de WhatsApp e ${plan.outline.cenariosLigacao} cenario(s) de ligacao.
+Escopo ja definido pelo planejamento: ${plan.outline.dores} dor(es) e
+${plan.outline.estrategias} estrategia(s) executada(s).
 
 Responda SOMENTE com um objeto JSON valido, sem markdown, no formato exato:
 {
@@ -102,6 +110,57 @@ Responda SOMENTE com um objeto JSON valido, sem markdown, no formato exato:
     "estrategiasExecutadas": [ { "nome": "", "descricao": "", "resultado": "" } ],
     "indicadores": [ { "label": "Tempo de tela", "atual": "", "meta": "", "variacao": "" } ]
   },
+  "materialApoio": {
+    "scriptLigacao": {
+      "abertura": "",
+      "qualificacao": "",
+      "apresentacao": "",
+      "objecoes": [ { "objecao": "", "resposta": "" } ],
+      "fechamento": ""
+    },
+    "cronogramaFollowup": [
+      { "dia": "D+1", "canal": "whatsapp", "objetivo": "", "mensagemExemplo": "" }
+    ]
+  }
+}
+
+Regras:
+- "materialApoio.scriptLigacao" e o script FINAL, pronto para uso, nao um exemplo
+  de pratica — deve ser diretamente utilizavel pelo time do cliente na proxima
+  ligacao real.
+- "cronogramaFollowup" tem entre 4 e 8 linhas cobrindo pelo menos 15 dias corridos
+  apos o primeiro contato, com pelo menos uma reativacao (contato depois de
+  silencio do lead).`;
+
+  const user = `Cliente: ${business.cliente}
+Segmento: ${business.segmento || plan.meta.segmento || "-"}
+Foco do treinamento: ${plan.analysis.focoDoTreinamento}
+Dores identificadas: ${plan.analysis.principaisDores.join(" | ") || "-"}
+Metricas identificadas: ${plan.analysis.principaisMetricas.join(" | ") || "-"}
+
+Briefing resumido:
+${briefing || "(nenhum material bruto foi anexado)"}
+
+Escreva a etapa 1, a etapa 2 e o material de apoio.`;
+
+  return { system, user };
+}
+
+export function contentPrompt2(business: Business, plan: Plan, parcial: { etapa1: unknown; etapa2: unknown }) {
+  const ctxParsed = business.context ? contextSchema.safeParse(business.context) : null;
+  const exemplos = ctxParsed?.success ? contextExemplos(ctxParsed.data) : "";
+
+  const system = `Voce escreve a etapa 3 (treinamento tatico — roleplay interativo) de uma
+apresentacao de treinamento comercial da Pulso. As etapas 1 e 2 ja foram
+escritas antes e estao abaixo, so como contexto — nao as repita na resposta.
+${BRAND_BRIEF}
+${ETAPAS_BRIEF}
+
+Escopo ja definido pelo planejamento: ${plan.outline.cenariosWhatsapp} cenario(s)
+de WhatsApp e ${plan.outline.cenariosLigacao} cenario(s) de ligacao.
+
+Responda SOMENTE com um objeto JSON valido, sem markdown, no formato exato:
+{
   "etapa3": {
     "roleplayWhatsapp": [
       {
@@ -123,18 +182,6 @@ Responda SOMENTE com um objeto JSON valido, sem markdown, no formato exato:
         ]
       }
     ]
-  },
-  "materialApoio": {
-    "scriptLigacao": {
-      "abertura": "",
-      "qualificacao": "",
-      "apresentacao": "",
-      "objecoes": [ { "objecao": "", "resposta": "" } ],
-      "fechamento": ""
-    },
-    "cronogramaFollowup": [
-      { "dia": "D+1", "canal": "whatsapp", "objetivo": "", "mensagemExemplo": "" }
-    ]
   }
 }
 
@@ -147,28 +194,22 @@ Regras:
   Sempre a mensagem PARTE DO CONSULTOR abrindo o roleplay.
 - "roleplayLigacao.roteiro" segue sempre as 5 etapas na ordem: Abertura,
   Qualificacao, Apresentacao, Contorno de objecao, Fechamento.
-- "materialApoio.scriptLigacao" e o script FINAL, pronto para uso, nao um exemplo
-  de pratica — deve ser directamente utilizavel pelo time do cliente na proxima
-  ligacao real.
-- "cronogramaFollowup" tem entre 4 e 8 linhas cobrindo pelo menos 15 dias corridos
-  apos o primeiro contato, com pelo menos uma reativacao (contato depois de
-  silencio do lead).
 - Nunca atribua uma fala do roleplay a uma pessoa real do briefing como se fosse
-  transcricao literal, a menos que o texto venha de um exemplo real abaixo.`;
+  transcricao literal, a menos que o texto venha de um exemplo real abaixo.
+- Os cenarios devem soar consistentes com as dores da etapa 1 e as
+  estrategias da etapa 2 (contexto abaixo) — o roleplay deve treinar
+  exatamente o que essas etapas identificaram.`;
 
   const user = `Cliente: ${business.cliente}
 Segmento: ${business.segmento || plan.meta.segmento || "-"}
-Foco do treinamento: ${plan.analysis.focoDoTreinamento}
-Dores identificadas: ${plan.analysis.principaisDores.join(" | ") || "-"}
-Metricas identificadas: ${plan.analysis.principaisMetricas.join(" | ") || "-"}
 
-Briefing resumido:
-${briefing || "(nenhum material bruto foi anexado)"}
+Etapa 1 e 2 ja escritas (contexto, nao repita):
+${JSON.stringify(parcial)}
 
 Exemplos reais de conversa (use como base do roleplay quando existirem):
 ${exemplos || "(nenhum exemplo real disponivel — construa cenarios de pratica plausiveis)"}
 
-Escreva o conteudo completo.`;
+Escreva a etapa 3.`;
 
   return { system, user };
 }
