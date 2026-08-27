@@ -163,6 +163,13 @@ Observacoes por campo:
 - "exemplos_whatsapp"/"exemplos_ligacao": so entram trechos que realmente
   aparecem no material. Sem exemplo real, devolva lista vazia — o roleplay
   usa esses trechos como base e nao pode receber conversa inventada.
+  LIMITE OBRIGATORIO (a resposta precisa caber num teto de tokens): no maximo
+  3 cenarios em "exemplos_whatsapp", cada um com no maximo 12 mensagens; no
+  maximo 2 cenarios em "exemplos_ligacao", cada "transcricao" com no maximo
+  1200 caracteres. Se o material tiver mais conversa real do que isso, escolha
+  os trechos mais representativos das dores identificadas — nunca tente
+  incluir tudo, e nunca corte uma mensagem ou um objeto no meio: prefira
+  devolver menos exemplos completos a arriscar um JSON truncado.
 - "restricoes": o que o cliente pediu para nao fazer ou nao usar no treinamento.`;
 
   const user = `Material bruto sobre o cliente e o processo comercial dele:\n\n${raw}\n\nExtraia o briefing.`;
