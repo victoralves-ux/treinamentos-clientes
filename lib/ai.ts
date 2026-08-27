@@ -3,6 +3,8 @@
  * devolve JSON ja parseado. Se as duas chaves existirem, Anthropic vence.
  */
 
+import { jsonrepair } from "jsonrepair";
+
 export type Provider = "anthropic" | "gemini";
 
 /**
@@ -111,23 +113,30 @@ function extractJson(text: string): unknown {
     return JSON.parse(trimmed);
   } catch (primeiroErro) {
     // Modelos as vezes escrevem uma frase antes do objeto: recorta do primeiro
-    // "{" ate o ultimo "}" e tenta de novo.
+    // "{" ate o ultimo "}" antes de tentar reparar.
     const start = trimmed.indexOf("{");
     const end = trimmed.lastIndexOf("}");
     if (start === -1 || end <= start) {
       console.error("[extractJson] JSON invalido, sem chaves. Texto:\n", text.slice(0, 4000));
       throw new ParseError("A IA não devolveu JSON válido.");
     }
+    const recortado = trimmed.slice(start, end + 1);
+
+    // Modelos escrevendo texto real (conversa de WhatsApp, por exemplo)
+    // costumam esquecer de escapar aspas dentro de uma fala ("ele disse
+    // "oi""), o que quebra o JSON.parse ali mesmo. jsonrepair cobre esse
+    // caso e outros comuns (virgula faltando/sobrando, aspas simples) sem
+    // arriscar reescrever o conteudo real — so a pontuacao do JSON.
     try {
-      return JSON.parse(trimmed.slice(start, end + 1));
+      return JSON.parse(jsonrepair(recortado));
     } catch (err) {
       console.error(
-        "[extractJson] JSON invalido. Erro 1:",
+        "[extractJson] JSON invalido mesmo apos reparo. Erro original:",
         primeiroErro instanceof Error ? primeiroErro.message : primeiroErro,
-        "Erro 2:",
+        "Erro do reparo:",
         err instanceof Error ? err.message : err,
         "\nTexto (ate 6000 chars):\n",
-        trimmed.slice(0, 6000),
+        recortado.slice(0, 6000),
       );
       throw new ParseError(err instanceof Error ? err.message : "JSON inválido");
     }
