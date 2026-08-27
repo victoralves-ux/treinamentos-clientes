@@ -252,10 +252,11 @@ export async function generateJson(
 
   const budget = provider === "anthropic" ? (orcamentoMs ?? ANTHROPIC_BUDGET_MS) : BUDGET_MS;
   // Primeira tentativa usa quase todo o orcamento (o essencial e uma so
-  // chamada bem-sucedida); a segunda so existe pro caso rapido de JSON
-  // malformado, entao fica curta mesmo quando o orcamento cresce.
+  // chamada bem-sucedida — medido em producao, um documento rico pode levar
+  // genuinamente ~51s de resposta); a segunda so existe pro caso rapido de
+  // JSON malformado (falha em segundos), entao uma reserva pequena basta.
   const timeouts =
-    provider === "anthropic" ? [Math.max(budget - 7000, 10000), 7000] : CALL_TIMEOUTS_MS;
+    provider === "anthropic" ? [Math.max(budget - 4000, 10000), 4000] : CALL_TIMEOUTS_MS;
   const tentativas = provider === "anthropic" ? timeouts.length : 4;
 
   const started = Date.now();

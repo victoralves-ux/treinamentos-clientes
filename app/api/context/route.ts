@@ -37,8 +37,11 @@ export async function POST(req: Request) {
   try {
     const prompts = contextPrompt(extraido.texto);
     // Sem SSE nesta rota (sem cao de guarda) — so o teto de 60s da funcao
-    // serverless importa, entao pode usar quase tudo isso com seguranca.
-    const bruto = await generateJson(prompts.system, prompts.user, 6000, "conteudo", 54_000);
+    // serverless importa. Medido em producao: um documento rico pode levar
+    // ~51s de verdade (sem ser bug, e a resposta genuina do modelo sem
+    // thinking). Usa quase todo o teto de 60s, com uma margem minima pro
+    // resto da funcao (parse do JSON, resposta).
+    const bruto = await generateJson(prompts.system, prompts.user, 5000, "conteudo", 58_000);
     const parsed = contextSchema.safeParse(bruto);
     if (!parsed.success) {
       return NextResponse.json({ error: "Não foi possível estruturar o material. Tente novamente." }, { status: 502 });
