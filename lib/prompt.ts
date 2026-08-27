@@ -20,9 +20,10 @@ const ETAPAS_BRIEF = `
 AS 3 ETAPAS DO TREINAMENTO (estrutura fixa, sempre nesta ordem):
 
 ETAPA 1 — CONEXAO:
-Mostra o processo atual do cliente (canais que ele usa: whatsapp, ligacao, call)
-e as dores reais desse processo. Objetivo: o time do cliente se reconhecer no
-diagnostico antes de ouvir a solucao.
+Mostra o processo atual do cliente (canais que ele usa — use exatamente um destes
+valores para cada canal: whatsapp, ligacao, call, email, instagram, sms,
+presencial, outro) e as dores reais desse processo. Objetivo: o time do cliente
+se reconhecer no diagnostico antes de ouvir a solucao.
 
 ETAPA 2 — DIRECIONAMENTO TATICO:
 Mostra o que ja foi executado (estrategias) e os indicadores que provam o efeito

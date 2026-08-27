@@ -9,6 +9,8 @@ const CANAL_LABEL: Record<string, string> = {
   ligacao: "Ligação",
   call: "Call",
   email: "E-mail",
+  instagram: "Instagram",
+  sms: "SMS",
   presencial: "Presencial",
   outro: "Outro",
 };

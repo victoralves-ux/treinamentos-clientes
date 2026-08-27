@@ -156,8 +156,9 @@ Observacoes por campo:
 - "dores": dores do PROCESSO COMERCIAL do cliente (o que trava a conversao), nao
   dores do produto/servico dele. Ex.: "time perde o timing do follow-up",
   "vendedor nao sabe contornar objecao de preco".
-- "canais": so entram canais que o material efetivamente cita (whatsapp, ligacao,
-  call, email, presencial).
+- "canais": so entram canais que o material efetivamente cita, usando exatamente
+  um destes valores: whatsapp, ligacao, call, email, instagram, sms, presencial,
+  outro.
 - "metricas": qualquer numero de desempenho comercial citado — tempo de tela,
   taxa de conversao, ticket medio, numero de leads, taxa de resposta etc.
 - "exemplos_whatsapp"/"exemplos_ligacao": so entram trechos que realmente

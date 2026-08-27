@@ -17,7 +17,11 @@ const lista = z.array(z.string()).default([]);
 
 /* ------------------------------- etapa 1 ---------------------------------- */
 
-export const canalSchema = z.enum(["whatsapp", "ligacao", "call", "email", "presencial", "outro"]);
+// .catch("outro"): um canal fora da lista nunca pode derrubar a geracao
+// inteira — cai em "outro" em vez de falhar a validacao do treinamento.
+export const canalSchema = z
+  .enum(["whatsapp", "ligacao", "call", "email", "instagram", "sms", "presencial", "outro"])
+  .catch("outro");
 
 export const etapaConexaoSchema = z.object({
   processoAtual: z.object({
@@ -61,7 +65,9 @@ export type EtapaDirecionamento = z.infer<typeof etapaDirecionamentoSchema>;
 /* ------------------------------- etapa 3 ---------------------------------- */
 
 export const mensagemWhatsappSchema = z.object({
-  autor: z.enum(["consultor", "cliente"]),
+  // .catch: se a IA escrever um papel fora dos dois esperados, cai em
+  // "consultor" em vez de derrubar a geracao inteira.
+  autor: z.enum(["consultor", "cliente"]).catch("consultor"),
   texto: texto,
   hora: texto.optional().default(""),
 });
