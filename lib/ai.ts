@@ -24,18 +24,21 @@ export type Provider = "anthropic" | "gemini";
 const CALL_TIMEOUTS_MS = [18_000, 14_000, 12_000];
 const BUDGET_MS = 50_000;
 
-// Anthropic so tem um modelo na lista (sem fallback pra outro), entao uma
-// tentativa que estourou o timeout nao vale repetir com o orcamento que
-// sobrou - vai travar de novo. Mas um JSON malformado (aspas nao escapadas
-// em texto real, por exemplo) costuma vir de uma resposta RAPIDA, e nesse
-// caso sobra tempo de sobra pra tentar de novo - daí a segunda entrada.
+// Orcamento padrao para Anthropic quando a chamada nao passa o parametro
+// orcamentoMs (usado pelas rotas com SSE — ver generateJson). Anthropic so
+// tem um modelo na lista (sem fallback pra outro), entao uma tentativa que
+// estourou o timeout nao vale repetir: vai travar de novo. O orcamento e
+// dividido em [quase tudo, um resto curto] dentro de generateJson — o resto
+// curto so existe pro caso rapido de JSON malformado (aspas nao escapadas em
+// texto real, por exemplo), que costuma vir de uma resposta RAPIDA e sobra
+// tempo de sobra pra tentar de novo.
 //
 // Precisa ficar ABAIXO do WATCHDOG_MS de lib/sse.ts (57s) com folga real: se
 // o orcamento daqui chegasse perto do cao de guarda, ele dispararia primeiro
 // e o consultor veria a mensagem generica em vez da mensagem especifica de
 // timeout da IA — foi exatamente o que aconteceu quando os dois numeros
-// ficaram parecidos demais.
-const ANTHROPIC_CALL_TIMEOUTS_MS = [42_000, 6_000];
+// ficaram parecidos demais. Rotas sem SSE (extracao de contexto) passam um
+// orcamentoMs maior, porque so o limite de 60s da funcao serverless importa.
 const ANTHROPIC_BUDGET_MS = 49_000;
 
 const tetoDaTentativa = (i: number, timeouts: number[] = CALL_TIMEOUTS_MS) =>
@@ -230,6 +233,14 @@ export async function generateJson(
   user: string,
   maxTokens = 12000,
   perfil: Perfil = "plano",
+  /**
+   * Orcamento total (ms) so para Anthropic, substituindo ANTHROPIC_BUDGET_MS.
+   * Rotas sem o cao de guarda do SSE (lib/sse.ts) podem usar quase todo o
+   * teto de 60s da funcao com seguranca; rotas com SSE precisam ficar bem
+   * abaixo do WATCHDOG_MS, senao ele derruba a geracao antes da mensagem
+   * especifica de timeout conseguir aparecer.
+   */
+  orcamentoMs?: number,
 ): Promise<unknown> {
   const provider = activeProvider();
   if (!provider) throw new Error("Nenhuma chave de IA configurada (ANTHROPIC_API_KEY ou GEMINI_API_KEY).");
@@ -239,9 +250,13 @@ export async function generateJson(
       ? [process.env.ANTHROPIC_MODEL || "claude-sonnet-5"]
       : GEMINI_MODELS[perfil].filter((m, i, a) => a.indexOf(m) === i);
 
-  const timeouts = provider === "anthropic" ? ANTHROPIC_CALL_TIMEOUTS_MS : CALL_TIMEOUTS_MS;
-  const budget = provider === "anthropic" ? ANTHROPIC_BUDGET_MS : BUDGET_MS;
-  const tentativas = provider === "anthropic" ? ANTHROPIC_CALL_TIMEOUTS_MS.length : 4;
+  const budget = provider === "anthropic" ? (orcamentoMs ?? ANTHROPIC_BUDGET_MS) : BUDGET_MS;
+  // Primeira tentativa usa quase todo o orcamento (o essencial e uma so
+  // chamada bem-sucedida); a segunda so existe pro caso rapido de JSON
+  // malformado, entao fica curta mesmo quando o orcamento cresce.
+  const timeouts =
+    provider === "anthropic" ? [Math.max(budget - 7000, 10000), 7000] : CALL_TIMEOUTS_MS;
+  const tentativas = provider === "anthropic" ? timeouts.length : 4;
 
   const started = Date.now();
   let lastError: unknown;
