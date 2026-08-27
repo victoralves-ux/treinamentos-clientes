@@ -29,8 +29,14 @@ const BUDGET_MS = 50_000;
 // sobrou - vai travar de novo. Mas um JSON malformado (aspas nao escapadas
 // em texto real, por exemplo) costuma vir de uma resposta RAPIDA, e nesse
 // caso sobra tempo de sobra pra tentar de novo - daí a segunda entrada.
-const ANTHROPIC_CALL_TIMEOUTS_MS = [55_000, 25_000];
-const ANTHROPIC_BUDGET_MS = 58_000;
+//
+// Precisa ficar ABAIXO do WATCHDOG_MS de lib/sse.ts (57s) com folga real: se
+// o orcamento daqui chegasse perto do cao de guarda, ele dispararia primeiro
+// e o consultor veria a mensagem generica em vez da mensagem especifica de
+// timeout da IA — foi exatamente o que aconteceu quando os dois numeros
+// ficaram parecidos demais.
+const ANTHROPIC_CALL_TIMEOUTS_MS = [42_000, 6_000];
+const ANTHROPIC_BUDGET_MS = 49_000;
 
 const tetoDaTentativa = (i: number, timeouts: number[] = CALL_TIMEOUTS_MS) =>
   timeouts[Math.min(i, timeouts.length - 1)];

@@ -15,8 +15,13 @@ export const SSE_HEADERS = {
  * acontecesse no meio da geracao, o treinamento ficava com status "gerando"
  * para sempre e o navegador girava sem nunca receber erro. O cao de guarda
  * dispara antes disso, grava a falha e avisa o cliente.
+ *
+ * Precisa ficar ACIMA do orcamento que lib/ai.ts da para a chamada da
+ * Anthropic (ANTHROPIC_BUDGET_MS) — senao o cao de guarda derruba a geracao
+ * antes da logica de retry ali dentro ter chance de agir, e o consultor so
+ * ve a mensagem generica em vez da mensagem especifica de timeout da IA.
  */
-const WATCHDOG_MS = 54_000;
+const WATCHDOG_MS = 57_000;
 
 export async function authorizeTreinamento(id: string) {
   const profile = await currentProfile();
