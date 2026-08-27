@@ -22,13 +22,13 @@ export type Provider = "anthropic" | "gemini";
 const CALL_TIMEOUTS_MS = [18_000, 14_000, 12_000];
 const BUDGET_MS = 50_000;
 
-// Anthropic so tem um modelo na lista (sem fallback pra outro), entao varias
-// tentativas curtas nao ajudam quando a resposta e legitimamente lenta - so
-// desperdicam orcamento. Uma unica tentativa usando quase todo o teto de 60s
-// da funcao (plano Hobby da Vercel, sem excecao): retentar depois de estourar
-// o timeout so aconteceria sem orcamento sobrando mesmo.
-const ANTHROPIC_CALL_TIMEOUTS_MS = [55_000];
-const ANTHROPIC_BUDGET_MS = 56_000;
+// Anthropic so tem um modelo na lista (sem fallback pra outro), entao uma
+// tentativa que estourou o timeout nao vale repetir com o orcamento que
+// sobrou - vai travar de novo. Mas um JSON malformado (aspas nao escapadas
+// em texto real, por exemplo) costuma vir de uma resposta RAPIDA, e nesse
+// caso sobra tempo de sobra pra tentar de novo - daí a segunda entrada.
+const ANTHROPIC_CALL_TIMEOUTS_MS = [55_000, 25_000];
+const ANTHROPIC_BUDGET_MS = 58_000;
 
 const tetoDaTentativa = (i: number, timeouts: number[] = CALL_TIMEOUTS_MS) =>
   timeouts[Math.min(i, timeouts.length - 1)];
@@ -174,7 +174,7 @@ export async function generateJson(
 
   const timeouts = provider === "anthropic" ? ANTHROPIC_CALL_TIMEOUTS_MS : CALL_TIMEOUTS_MS;
   const budget = provider === "anthropic" ? ANTHROPIC_BUDGET_MS : BUDGET_MS;
-  const tentativas = provider === "anthropic" ? timeouts.length : 4;
+  const tentativas = provider === "anthropic" ? ANTHROPIC_CALL_TIMEOUTS_MS.length : 4;
 
   const started = Date.now();
   let lastError: unknown;
@@ -202,6 +202,9 @@ export async function generateJson(
   }
   if (lastError instanceof Error && /timeout|abort/i.test(lastError.message)) {
     throw new Error("O modelo de IA demorou demais para responder. Tente gerar novamente.");
+  }
+  if (lastError instanceof ParseError) {
+    throw new Error("A IA devolveu uma resposta em formato inválido. Tente gerar novamente.");
   }
   throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
