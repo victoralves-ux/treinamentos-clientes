@@ -113,8 +113,17 @@ export const contextSchema = z.object({
 
 export type ClientContext = z.infer<typeof contextSchema>;
 
-export function contextPrompt(raw: string) {
-  const system = `Voce organiza material de treinamento comercial para a Pulso, uma
+/**
+ * O briefing e extraido em DUAS chamadas de IA, cada uma a partir de um
+ * arquivo separado que o consultor sobe (ver lib/prompt-consultor.ts) — nao
+ * uma so a partir de um documento unico. Motivo: o mesmo teto de 60s da
+ * funcao serverless da Vercel (Hobby) que limita a geracao do treinamento.
+ * Dividir em duas chamadas menores, cada uma com seu proprio teto de 24.000
+ * caracteres de entrada (lib/extrair-texto.ts), da na pratica ~48.000
+ * caracteres de material bruto sem truncar nada — o dobro da capacidade de
+ * uma chamada unica, sem precisar aumentar o teto de nenhuma delas.
+ */
+const REGRA_BASE = `Voce organiza material de treinamento comercial para a Pulso, uma
 consultoria que treina equipes de vendas de clientes high ticket.
 
 Recebe material bruto (atas de reuniao, protocolos internos, trechos reais de
@@ -130,24 +139,40 @@ o campo recebe null (ou lista vazia). Nunca preencha por suposicao, nunca
 complete com frase generica.
 
 Ruim:  "O time tem dificuldade em converter leads."
-Bom:   "Taxa de conversao de call para venda caiu de 18% para 11% no ultimo mes."
+Bom:   "Taxa de conversao de call para venda caiu de 18% para 11% no ultimo mes."`;
 
-Preserve numeros, nomes, trechos literais de conversa e termos tecnicos exatamente
-como aparecem — sobretudo em "exemplos_whatsapp" e "exemplos_ligacao": esses
-trechos viram a base do roleplay interativo do treinamento, entao precisam ser
-reais, nao parafraseados.
+export const contextSchemaDiagnostico = contextSchema.pick({
+  cliente: true,
+  processo_atual: true,
+  dores: true,
+  metricas: true,
+  restricoes: true,
+  observacoes: true,
+});
+
+export const contextSchemaExecucao = contextSchema.pick({
+  estrategias_executadas: true,
+  exemplos_whatsapp: true,
+  exemplos_ligacao: true,
+  script_ligacao_atual: true,
+  cronograma_followup_atual: true,
+});
+
+/** Arquivo 1: identificacao do cliente, processo atual, dores e metricas. */
+export function contextPromptDiagnostico(raw: string) {
+  const system = `${REGRA_BASE}
+
+Nesta chamada voce extrai SOMENTE o diagnostico do cliente. Estrategias ja
+executadas, exemplos reais de conversa, script de ligacao e cronograma de
+follow-up vem de um segundo arquivo, numa segunda chamada — nao se preocupe
+com eles aqui, mesmo que apareçam de passagem no material.
 
 Formato exato da resposta:
 {
   "cliente": { "nome": null, "segmento": null, "ticket_medio": null, "consultor_responsavel": null },
   "processo_atual": { "canais": [], "descricao": null, "ferramentas": [] },
   "dores": [ { "titulo": "", "detalhe": null } ],
-  "estrategias_executadas": [ { "nome": "", "descricao": null, "resultado": null } ],
   "metricas": [ { "label": "", "atual": null, "meta": null, "variacao": null } ],
-  "exemplos_whatsapp": [ { "titulo": "", "contexto": null, "mensagens": [ { "autor": "consultor ou cliente", "texto": "" } ] } ],
-  "exemplos_ligacao": [ { "titulo": "", "contexto": null, "transcricao": null } ],
-  "script_ligacao_atual": { "abertura": null, "qualificacao": null, "apresentacao": null, "objecoes": [ { "objecao": "", "resposta": "" } ], "fechamento": null },
-  "cronograma_followup_atual": [ { "dia": "", "canal": "", "objetivo": null, "mensagem_exemplo": null } ],
   "restricoes": [],
   "observacoes": []
 }
@@ -161,6 +186,36 @@ Observacoes por campo:
   outro.
 - "metricas": qualquer numero de desempenho comercial citado — tempo de tela,
   taxa de conversao, ticket medio, numero de leads, taxa de resposta etc.
+- "restricoes": o que o cliente pediu para nao fazer ou nao usar no treinamento.`;
+
+  const user = `Material bruto sobre o cliente — arquivo 1 de 2 (diagnostico):\n\n${raw}\n\nExtraia cliente, processo atual, dores, metricas, restricoes e observacoes.`;
+  return { system, user };
+}
+
+/** Arquivo 2: o que ja foi executado e os exemplos reais de conversa. */
+export function contextPromptExecucao(raw: string) {
+  const system = `${REGRA_BASE}
+
+Nesta chamada voce extrai SOMENTE o que ja foi executado e os exemplos reais
+de conversa. Identificacao do cliente, processo atual, dores e metricas vem
+de um primeiro arquivo, ja extraido em outra chamada — nao se preocupe com
+eles aqui, mesmo que apareçam de passagem no material.
+
+Preserve numeros, nomes, trechos literais de conversa e termos tecnicos exatamente
+como aparecem — sobretudo em "exemplos_whatsapp" e "exemplos_ligacao": esses
+trechos viram a base do roleplay interativo do treinamento, entao precisam ser
+reais, nao parafraseados.
+
+Formato exato da resposta:
+{
+  "estrategias_executadas": [ { "nome": "", "descricao": null, "resultado": null } ],
+  "exemplos_whatsapp": [ { "titulo": "", "contexto": null, "mensagens": [ { "autor": "consultor ou cliente", "texto": "" } ] } ],
+  "exemplos_ligacao": [ { "titulo": "", "contexto": null, "transcricao": null } ],
+  "script_ligacao_atual": { "abertura": null, "qualificacao": null, "apresentacao": null, "objecoes": [ { "objecao": "", "resposta": "" } ], "fechamento": null },
+  "cronograma_followup_atual": [ { "dia": "", "canal": "", "objetivo": null, "mensagem_exemplo": null } ]
+}
+
+Observacoes por campo:
 - "exemplos_whatsapp"/"exemplos_ligacao": so entram trechos que realmente
   aparecem no material. Sem exemplo real, devolva lista vazia — o roleplay
   usa esses trechos como base e nao pode receber conversa inventada.
@@ -170,11 +225,30 @@ Observacoes por campo:
   1200 caracteres. Se o material tiver mais conversa real do que isso, escolha
   os trechos mais representativos das dores identificadas — nunca tente
   incluir tudo, e nunca corte uma mensagem ou um objeto no meio: prefira
-  devolver menos exemplos completos a arriscar um JSON truncado.
-- "restricoes": o que o cliente pediu para nao fazer ou nao usar no treinamento.`;
+  devolver menos exemplos completos a arriscar um JSON truncado.`;
 
-  const user = `Material bruto sobre o cliente e o processo comercial dele:\n\n${raw}\n\nExtraia o briefing.`;
+  const user = `Material bruto sobre o cliente — arquivo 2 de 2 (execucao e exemplos):\n\n${raw}\n\nExtraia estrategias executadas, exemplos reais de conversa, script de ligacao e cronograma de follow-up.`;
   return { system, user };
+}
+
+/** Junta os dois briefings parciais no formato completo usado pelo resto do app. */
+export function mergeContext(
+  diagnostico?: z.infer<typeof contextSchemaDiagnostico> | null,
+  execucao?: z.infer<typeof contextSchemaExecucao> | null,
+): ClientContext {
+  return {
+    cliente: diagnostico?.cliente ?? {},
+    processo_atual: diagnostico?.processo_atual ?? {},
+    dores: diagnostico?.dores ?? [],
+    metricas: diagnostico?.metricas ?? [],
+    restricoes: diagnostico?.restricoes ?? [],
+    observacoes: diagnostico?.observacoes ?? [],
+    estrategias_executadas: execucao?.estrategias_executadas ?? [],
+    exemplos_whatsapp: execucao?.exemplos_whatsapp ?? [],
+    exemplos_ligacao: execucao?.exemplos_ligacao ?? [],
+    script_ligacao_atual: execucao?.script_ligacao_atual ?? {},
+    cronograma_followup_atual: execucao?.cronograma_followup_atual ?? [],
+  };
 }
 
 /**

@@ -1,17 +1,26 @@
 /**
  * Prompt pronto para colar no Project do Claude que ja tem o material do
- * cliente (atas, protocolos, dados, conversas). Ele pede ao Claude para
- * organizar tudo no formato que o extrator deste app entende — o consultor
- * so precisa copiar a resposta e colar aqui (ou fazer download como .txt e
- * subir o arquivo).
+ * cliente (atas, protocolos, dados, conversas). Pede para o Claude gerar
+ * DOIS arquivos .txt para download, em vez de escrever tudo na conversa —
+ * mais rapido, gasta menos tokens, e da certinho com os dois uploads deste
+ * app (ver ContextExtractor.tsx), que analisa um arquivo de cada vez.
  */
 export const PROMPT_CONSULTOR = `Preciso que voce organize as informacoes deste cliente para eu montar um
 treinamento comercial para a equipe dele. Use TUDO que ja esta neste projeto
 (atas de reuniao, protocolos, dados de desempenho, prints ou transcricoes de
-conversas no WhatsApp, transcricoes de ligacao) e responda preenchendo os
-campos abaixo. NAO invente nada: se uma informacao nao existir no material
-deste projeto, deixe o campo em branco ou escreva "não informado".
+conversas no WhatsApp, transcricoes de ligacao). NAO invente nada: se uma
+informacao nao existir no material deste projeto, deixe em branco ou escreva
+"não informado".
 
+IMPORTANTE — nao escreva esse conteudo na conversa. Gere DIRETAMENTE DOIS
+ARQUIVOS .txt para eu baixar (use a ferramenta de criar arquivo), um para
+cada bloco abaixo. Não repita o conteúdo dos arquivos na mensagem de resposta
+— isso só gasta tokens à toa. Se quiser, confirme em uma frase curta que os
+dois arquivos foram gerados.
+
+--------------------------------------------------------------------------
+ARQUIVO 1 — nome sugerido: diagnostico-[nome do cliente].txt
+--------------------------------------------------------------------------
 1) CLIENTE
 - Nome do cliente / empresa:
 - Segmento:
@@ -30,35 +39,41 @@ em reunioes ou dados:
 - Dor 2:
 - Dor 3:
 
-4) ESTRATEGIAS JA EXECUTADAS
-Para cada acao que a Pulso ou o proprio cliente ja tentou:
-- Nome da estrategia | o que foi feito | resultado observado
-
-5) METRICAS / INDICADORES
+4) METRICAS / INDICADORES
 Todo numero de desempenho comercial disponivel (nao invente nenhum):
 - Tempo de tela com as pessoas: atual e meta, se houver
 - Taxa de conversao: atual e meta, se houver
 - Outros indicadores relevantes (numero de leads, taxa de resposta, ticket medio etc.)
 
-6) EXEMPLOS REAIS DE CONVERSA (essencial para o roleplay do treinamento)
+5) RESTRICOES E OBSERVACOES
+- Algo que NAO deve aparecer no treinamento?
+- Alguma observacao importante sobre este cliente?
+
+--------------------------------------------------------------------------
+ARQUIVO 2 — nome sugerido: execucao-[nome do cliente].txt
+--------------------------------------------------------------------------
+6) ESTRATEGIAS JA EXECUTADAS
+Para cada acao que a Pulso ou o proprio cliente ja tentou:
+- Nome da estrategia | o que foi feito | resultado observado
+
+7) EXEMPLOS REAIS DE CONVERSA (essencial para o roleplay do treinamento)
 Cole trechos literais — nao resuma:
 - Trechos de conversas reais no WhatsApp (consultor e cliente, na ordem em que aconteceram)
 - Trechos de transcricao de ligacao real, se houver
 
-7) SCRIPT DE LIGACAO JA USADO (se existir)
+8) SCRIPT DE LIGACAO JA USADO (se existir)
 - Abertura:
 - Qualificacao:
 - Apresentacao:
 - Objecoes mais comuns e como o time costuma responder:
 - Fechamento:
 
-8) CRONOGRAMA DE FOLLOW-UP JA USADO (se existir)
+9) CRONOGRAMA DE FOLLOW-UP JA USADO (se existir)
 - Dia | canal | objetivo | mensagem de exemplo
 
-9) RESTRICOES E OBSERVACOES
-- Algo que NAO deve aparecer no treinamento?
-- Alguma observacao importante sobre este cliente?
+--------------------------------------------------------------------------
 
-Responda em texto corrido, organizado exatamente nesta ordem de secoes (1 a 9).
-Depois que eu revisar, vou salvar sua resposta como .txt e subir no gerador de
-treinamentos da Pulso, que le esse texto e monta a apresentacao automaticamente.`;
+Depois que eu revisar os dois arquivos, vou subir cada um no lugar certo do
+gerador de treinamentos da Pulso (arquivo 1 no upload "Diagnóstico", arquivo
+2 no upload "Execução e exemplos"), que le e monta a apresentacao
+automaticamente.`;

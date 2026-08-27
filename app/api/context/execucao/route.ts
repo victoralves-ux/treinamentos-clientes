@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateJson } from "@/lib/ai";
-import { contextPrompt, contextSchema } from "@/lib/context";
+import { contextPromptExecucao, contextSchemaExecucao } from "@/lib/context";
 import { extrairTexto, TAMANHO_MAXIMO } from "@/lib/extrair-texto";
 import { currentProfile } from "@/lib/supabase/server";
 
@@ -8,7 +8,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-/** Le o documento enviado e transforma em briefing estruturado. */
+/**
+ * Le o arquivo 2 (execucao e exemplos) e devolve so essa fatia do briefing.
+ * Ver lib/context.ts para o porque de duas chamadas separadas em vez de uma.
+ */
 export async function POST(req: Request) {
   const profile = await currentProfile();
   if (!profile) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
@@ -35,14 +38,9 @@ export async function POST(req: Request) {
   }
 
   try {
-    const prompts = contextPrompt(extraido.texto);
-    // Sem SSE nesta rota (sem cao de guarda) — so o teto de 60s da funcao
-    // serverless importa. Medido em producao: um documento rico pode levar
-    // ~51s de verdade (sem ser bug, e a resposta genuina do modelo sem
-    // thinking). Usa quase todo o teto de 60s, com uma margem minima pro
-    // resto da funcao (parse do JSON, resposta).
+    const prompts = contextPromptExecucao(extraido.texto);
     const bruto = await generateJson(prompts.system, prompts.user, 5000, "conteudo", 58_000);
-    const parsed = contextSchema.safeParse(bruto);
+    const parsed = contextSchemaExecucao.safeParse(bruto);
     if (!parsed.success) {
       return NextResponse.json({ error: "Não foi possível estruturar o material. Tente novamente." }, { status: 502 });
     }
