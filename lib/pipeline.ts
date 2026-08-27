@@ -1,6 +1,6 @@
 import { generateJson } from "./ai";
 import { updateTreinamentoAdmin } from "./repo";
-import { contentPrompt1, contentPrompt2, planPrompt, repairPrompt } from "./prompt";
+import { contentPrompt1, contentPrompt2, planPrompt } from "./prompt";
 import { planSchema, type Business, type Plan, type TreinamentoSpec } from "./schema";
 import { normalize, validate } from "./validate";
 
@@ -42,16 +42,16 @@ export async function planTreinamento(business: Business, emit: Emit): Promise<P
 
   emit({ step: "escopo", state: "running" });
 
-  let parsed: ReturnType<typeof planSchema.safeParse> | null = null;
-  for (let tentativa = 0; tentativa < 2; tentativa++) {
-    const prompts = planPrompt(business);
-    const raw = await generateJson(prompts.system, prompts.user, 3000);
-    parsed = planSchema.safeParse(raw);
-    if (parsed.success) break;
-  }
+  // Uma unica chamada: generateJson ja tenta de novo sozinho quando o JSON
+  // vem malformado (ver lib/ai.ts). Um laco aqui por cima faria ate duas
+  // chamadas completas dentro da mesma requisicao de 60s — foi exatamente
+  // esse padrao que estourava o tempo na etapa de conteudo.
+  const prompts = planPrompt(business);
+  const raw = await generateJson(prompts.system, prompts.user, 3000);
+  const parsed = planSchema.safeParse(raw);
 
-  if (!parsed?.success) {
-    emit({ step: "escopo", state: "error", detail: parsed?.error.issues[0]?.message });
+  if (!parsed.success) {
+    emit({ step: "escopo", state: "error", detail: parsed.error.issues[0]?.message });
     throw new Error("A IA não conseguiu planejar o treinamento no formato esperado. Tente gerar novamente.");
   }
   const plan = parsed.data;
@@ -107,23 +107,16 @@ export async function buildConteudo2(
   emit({ step: "montagem", state: "done" });
 
   emit({ step: "validacao", state: "running" });
-  let result = validate(candidate, business);
+  const result = validate(candidate, business);
 
-  if (!result.ok) {
-    emit({ step: "validacao", state: "running", detail: "Corrigindo problemas encontrados…" });
-    const fix = repairPrompt(result.fatal, candidate);
-    try {
-      const repaired = await generateJson(fix.system, fix.user, 6000, "conteudo");
-      candidate = normalize(repaired, business);
-      result = validate(candidate, business);
-    } catch {
-      /* mantem o resultado anterior; o erro abaixo cobre o caso */
-    }
-  }
-
+  // Sem correcao automatica aqui: essa rota ja fez uma chamada de IA (a etapa
+  // 3) dentro do teto de 60s do plano Hobby da Vercel. Uma segunda chamada de
+  // correcao, na mesma requisicao, e exatamente o que estourava o tempo antes
+  // — as vezes as duas juntas passavam do limite mesmo cada uma cabendo
+  // sozinha. Falha rara e clara aqui vale mais que travar silenciosamente.
   if (!result.ok || !result.spec) {
     emit({ step: "validacao", state: "error", detail: result.fatal.slice(0, 2).join(" | ") });
-    throw new Error(`Treinamento inválido após correção: ${result.fatal.slice(0, 3).join(" | ")}`);
+    throw new Error(`Treinamento inválido: ${result.fatal.slice(0, 3).join(" | ")}. Tente gerar novamente.`);
   }
 
   emit({
