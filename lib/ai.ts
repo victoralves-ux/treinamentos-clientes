@@ -22,7 +22,14 @@ export type Provider = "anthropic" | "gemini";
 const CALL_TIMEOUTS_MS = [18_000, 14_000, 12_000];
 const BUDGET_MS = 50_000;
 
-const tetoDaTentativa = (i: number) => CALL_TIMEOUTS_MS[Math.min(i, CALL_TIMEOUTS_MS.length - 1)];
+// Anthropic so tem um modelo na lista (sem fallback pra outro), entao varias
+// tentativas curtas nao ajudam quando a resposta e legitimamente lenta -
+// so desperdicam orcamento. Uma tentativa longa, mais uma curta de reserva.
+const ANTHROPIC_CALL_TIMEOUTS_MS = [46_000, 8_000];
+const ANTHROPIC_BUDGET_MS = 54_000;
+
+const tetoDaTentativa = (i: number, timeouts: number[] = CALL_TIMEOUTS_MS) =>
+  timeouts[Math.min(i, timeouts.length - 1)];
 
 /**
  * Dois perfis de modelo. O planejamento e uma resposta curta e vale usar o
@@ -91,6 +98,11 @@ async function callAnthropic(system: string, user: string, maxTokens: number, mo
       // mensagem do usuario"). O system prompt ja instrui a responder so com
       // JSON; extractJson cobre o caso de sobrar markdown ou texto em volta.
       messages: [{ role: "user", content: user }],
+      // Sonnet 5 pensa (thinking adaptativo) por padrao, o que adiciona
+      // latencia sem necessidade aqui: e so extracao/preenchimento de JSON
+      // estruturado, sem raciocinio agentic. Desligar reduz o tempo de
+      // resposta bem abaixo do teto da funcao serverless.
+      thinking: { type: "disabled" },
     }),
   });
   if (!res.ok) throw new HttpError(res.status, `Anthropic ${res.status}: ${(await res.text()).slice(0, 300)}`);
@@ -158,22 +170,26 @@ export async function generateJson(
       ? [process.env.ANTHROPIC_MODEL || "claude-sonnet-5"]
       : GEMINI_MODELS[perfil].filter((m, i, a) => a.indexOf(m) === i);
 
+  const timeouts = provider === "anthropic" ? ANTHROPIC_CALL_TIMEOUTS_MS : CALL_TIMEOUTS_MS;
+  const budget = provider === "anthropic" ? ANTHROPIC_BUDGET_MS : BUDGET_MS;
+  const tentativas = provider === "anthropic" ? timeouts.length : 4;
+
   const started = Date.now();
   let lastError: unknown;
 
-  for (let attempt = 0; attempt < 4; attempt++) {
+  for (let attempt = 0; attempt < tentativas; attempt++) {
     // Alterna o modelo a cada tentativa: quando um esta instavel, o proximo
     // costuma responder na hora.
     const model = models[attempt % models.length];
     try {
-      const teto = tetoDaTentativa(attempt);
+      const teto = tetoDaTentativa(attempt, timeouts);
       return provider === "anthropic"
         ? await callAnthropic(system, user, maxTokens, model, teto)
         : await callGemini(system, user, maxTokens, model, teto);
     } catch (err) {
       lastError = err;
-      const restante = BUDGET_MS - (Date.now() - started);
-      if (!retryable(err) || restante < tetoDaTentativa(attempt + 1)) break;
+      const restante = budget - (Date.now() - started);
+      if (!retryable(err) || restante < tetoDaTentativa(attempt + 1, timeouts)) break;
       // Espera curta: o objetivo e trocar de modelo, nao aguardar recuperacao.
       await sleep(Math.min(600, restante / 4));
     }
