@@ -86,17 +86,17 @@ async function callAnthropic(system: string, user: string, maxTokens: number, mo
       model,
       max_tokens: maxTokens,
       system,
-      messages: [
-        { role: "user", content: user },
-        // Prefill forca a resposta a comecar direto no JSON.
-        { role: "assistant", content: "{" },
-      ],
+      // Modelos recentes (claude-sonnet-5 e a familia 4.6+) rejeitam prefill
+      // de mensagem do assistente ("a conversa precisa terminar com uma
+      // mensagem do usuario"). O system prompt ja instrui a responder so com
+      // JSON; extractJson cobre o caso de sobrar markdown ou texto em volta.
+      messages: [{ role: "user", content: user }],
     }),
   });
   if (!res.ok) throw new HttpError(res.status, `Anthropic ${res.status}: ${(await res.text()).slice(0, 300)}`);
   const json = (await res.json()) as { content: { type: string; text?: string }[] };
   const text = json.content.map((c) => c.text ?? "").join("");
-  return extractJson("{" + text);
+  return extractJson(text);
 }
 
 async function callGemini(system: string, user: string, maxTokens: number, model: string, tetoMs: number) {
