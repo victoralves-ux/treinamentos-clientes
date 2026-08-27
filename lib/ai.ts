@@ -23,10 +23,12 @@ const CALL_TIMEOUTS_MS = [18_000, 14_000, 12_000];
 const BUDGET_MS = 50_000;
 
 // Anthropic so tem um modelo na lista (sem fallback pra outro), entao varias
-// tentativas curtas nao ajudam quando a resposta e legitimamente lenta -
-// so desperdicam orcamento. Uma tentativa longa, mais uma curta de reserva.
-const ANTHROPIC_CALL_TIMEOUTS_MS = [46_000, 8_000];
-const ANTHROPIC_BUDGET_MS = 54_000;
+// tentativas curtas nao ajudam quando a resposta e legitimamente lenta - so
+// desperdicam orcamento. Uma unica tentativa usando quase todo o teto de 60s
+// da funcao (plano Hobby da Vercel, sem excecao): retentar depois de estourar
+// o timeout so aconteceria sem orcamento sobrando mesmo.
+const ANTHROPIC_CALL_TIMEOUTS_MS = [55_000];
+const ANTHROPIC_BUDGET_MS = 56_000;
 
 const tetoDaTentativa = (i: number, timeouts: number[] = CALL_TIMEOUTS_MS) =>
   timeouts[Math.min(i, timeouts.length - 1)];

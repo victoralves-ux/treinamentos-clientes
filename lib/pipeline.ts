@@ -65,7 +65,7 @@ export async function buildTreinamento(
 ): Promise<TreinamentoSpec> {
   emit({ step: "conteudo", state: "running" });
   const prompts = contentPrompt(business, plan);
-  const rawContent = (await generateJson(prompts.system, prompts.user, 16000, "conteudo")) as Record<string, unknown>;
+  const rawContent = (await generateJson(prompts.system, prompts.user, 10000, "conteudo")) as Record<string, unknown>;
   emit({ step: "conteudo", state: "done", detail: "Etapas 1, 2 e 3 escritas" });
 
   emit({ step: "montagem", state: "running" });
@@ -88,7 +88,7 @@ export async function buildTreinamento(
     emit({ step: "validacao", state: "running", detail: "Corrigindo problemas encontrados…" });
     const fix = repairPrompt(result.fatal, candidate);
     try {
-      const repaired = await generateJson(fix.system, fix.user, 16000, "conteudo");
+      const repaired = await generateJson(fix.system, fix.user, 10000, "conteudo");
       candidate = normalize(repaired, business);
       result = validate(candidate, business);
     } catch {

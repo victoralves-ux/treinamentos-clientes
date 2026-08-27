@@ -36,7 +36,7 @@ export async function POST(req: Request) {
 
   try {
     const prompts = contextPrompt(extraido.texto);
-    const bruto = await generateJson(prompts.system, prompts.user, 10000, "conteudo");
+    const bruto = await generateJson(prompts.system, prompts.user, 6000, "conteudo");
     const parsed = contextSchema.safeParse(bruto);
     if (!parsed.success) {
       return NextResponse.json({ error: "Não foi possível estruturar o material. Tente novamente." }, { status: 502 });
