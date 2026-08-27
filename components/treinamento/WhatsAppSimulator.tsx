@@ -1,58 +1,31 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import type { CenarioWhatsapp } from "@/lib/schema";
 
 /**
- * Roleplay interativo de WhatsApp: revela as mensagens uma a uma, como uma
- * conversa acontecendo ao vivo, para o time do cliente praticar a leitura
- * do ritmo real de uma conversa — nao e so uma lista de texto estatica.
+ * Roleplay interativo de WhatsApp: componente controlado — quem decide quantas
+ * mensagens estao visiveis e o pai (TreinamentoRenderer), via teclado (setas
+ * para os lados) ou pelos botoes aqui. Sem autoplay: o consultor avanca no
+ * ritmo que quiser durante o treinamento.
  */
-export function WhatsAppSimulator({ cenario }: { cenario: CenarioWhatsapp }) {
-  const [visiveis, setVisiveis] = useState(0);
-  const [digitando, setDigitando] = useState<"consultor" | "cliente" | null>(null);
-  const [tocando, setTocando] = useState(false);
+export function WhatsAppSimulator({
+  cenario,
+  visibleCount,
+  onNext,
+  onPrev,
+}: {
+  cenario: CenarioWhatsapp;
+  visibleCount: number;
+  onNext: () => void;
+  onPrev: () => void;
+}) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
-
-  function limpar() {
-    timers.current.forEach(clearTimeout);
-    timers.current = [];
-  }
-
-  function reproduzir() {
-    limpar();
-    setVisiveis(0);
-    setDigitando(null);
-    setTocando(true);
-
-    let acumulado = 0;
-    cenario.mensagens.forEach((m, i) => {
-      const atraso = Math.min(1400, 500 + m.texto.length * 18);
-      acumulado += i === 0 ? 300 : atraso;
-      const tDigitar = setTimeout(() => setDigitando(m.autor), acumulado - Math.min(500, atraso * 0.4));
-      const tMostrar = setTimeout(() => {
-        setDigitando(null);
-        setVisiveis(i + 1);
-      }, acumulado);
-      timers.current.push(tDigitar, tMostrar);
-    });
-    const tFim = setTimeout(() => setTocando(false), acumulado + 200);
-    timers.current.push(tFim);
-  }
-
-  function mostrarTudo() {
-    limpar();
-    setDigitando(null);
-    setTocando(false);
-    setVisiveis(cenario.mensagens.length);
-  }
+  const total = cenario.mensagens.length;
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [visiveis, digitando]);
-
-  useEffect(() => () => limpar(), []);
+  }, [visibleCount]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_minmax(320px,420px)] lg:items-center">
@@ -66,26 +39,28 @@ export function WhatsAppSimulator({ cenario }: { cenario: CenarioWhatsapp }) {
             {cenario.contexto}
           </p>
         ) : null}
-        <div className="mt-6 flex gap-3">
+        <div className="mt-6 flex items-center gap-3">
           <button
             type="button"
-            onClick={reproduzir}
-            disabled={tocando}
-            className="px-5 py-2.5 text-sm font-bold disabled:opacity-50"
-            style={{ background: "var(--app-accent)", color: "#0a0a0a", borderRadius: "9px" }}
+            onClick={onPrev}
+            disabled={visibleCount <= 1}
+            className="px-4 py-2 text-xs font-semibold disabled:opacity-30"
+            style={{ border: "1px solid #333", color: "#ccc", borderRadius: "8px" }}
           >
-            {tocando ? "Reproduzindo…" : visiveis > 0 ? "Reproduzir de novo" : "▶ Reproduzir conversa"}
+            ← Mensagem anterior
           </button>
-          {!tocando && visiveis < cenario.mensagens.length ? (
-            <button
-              type="button"
-              onClick={mostrarTudo}
-              className="px-5 py-2.5 text-sm font-semibold"
-              style={{ border: "1px solid #333", color: "#ccc", borderRadius: "9px" }}
-            >
-              Mostrar tudo
-            </button>
-          ) : null}
+          <button
+            type="button"
+            onClick={onNext}
+            disabled={visibleCount >= total}
+            className="px-4 py-2 text-xs font-bold disabled:opacity-30"
+            style={{ background: "var(--app-accent)", color: "#0a0a0a", borderRadius: "8px" }}
+          >
+            {visibleCount >= total ? "Fim da conversa" : "Próxima mensagem →"}
+          </button>
+          <span className="text-xs font-semibold" style={{ color: "var(--app-muted)" }}>
+            {Math.min(visibleCount, total)} / {total}
+          </span>
         </div>
       </div>
 
@@ -99,20 +74,17 @@ export function WhatsAppSimulator({ cenario }: { cenario: CenarioWhatsapp }) {
           </span>
           <div>
             <p className="text-sm font-semibold text-white">Cliente</p>
-            <p className="text-[11px]" style={{ color: digitando ? "var(--app-accent)" : "#7a7a7a" }}>
-              {digitando ? "digitando…" : "online"}
-            </p>
+            <p className="text-[11px]" style={{ color: "#7a7a7a" }}>online</p>
           </div>
         </div>
 
         <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto px-3 py-4">
-          {cenario.mensagens.slice(0, visiveis).map((m, i) => (
+          {cenario.mensagens.slice(0, visibleCount).map((m, i) => (
             <Bolha key={i} autor={m.autor} texto={m.texto} hora={m.hora} />
           ))}
-          {digitando ? <Digitando autor={digitando} /> : null}
-          {visiveis === 0 && !digitando ? (
+          {visibleCount === 0 ? (
             <p className="pt-10 text-center text-xs" style={{ color: "#5a5a5a" }}>
-              Clique em reproduzir para iniciar a simulação.
+              Use → para iniciar a simulação.
             </p>
           ) : null}
         </div>
@@ -137,26 +109,6 @@ function Bolha({ autor, texto, hora }: { autor: "consultor" | "cliente"; texto: 
         {hora ? (
           <span className="ml-2 align-bottom text-[10px] opacity-70">{hora}</span>
         ) : null}
-      </div>
-    </div>
-  );
-}
-
-function Digitando({ autor }: { autor: "consultor" | "cliente" }) {
-  const consultor = autor === "consultor";
-  return (
-    <div className={`flex ${consultor ? "justify-end" : "justify-start"}`}>
-      <div
-        className="flex items-center gap-1 rounded-2xl px-4 py-3"
-        style={{ background: consultor ? "var(--app-accent)" : "#232323" }}
-      >
-        {[0, 1, 2].map((i) => (
-          <span
-            key={i}
-            className="typing-dot h-1.5 w-1.5 rounded-full"
-            style={{ background: consultor ? "#0a0a0a" : "#aaa", animationDelay: `${i * 0.15}s` }}
-          />
-        ))}
       </div>
     </div>
   );

@@ -10,10 +10,20 @@ const BRAND_BRIEF = `
 IDENTIDADE E TOM (fixos, nao mude):
 - Apresentacao comercial da Pulso para o time do cliente. Publico high ticket.
 - Tom serio, sobrio, premium. Nada de emoji, nada de girias, nada de exclamacao em excesso.
-- Frases curtas e diretas. Zero jargao de marketing vazio ("solucoes inovadoras").
+- Zero jargao de marketing vazio ("solucoes inovadoras").
 - Nunca inventar numero, resultado ou frase de cliente que nao veio do briefing.
   Se um dado nao foi informado, o campo correspondente fica vazio — nao complete
   com exemplo generico.
+
+ISTO E UM SLIDE PROJETADO NA TELA, NAO UM DOCUMENTO PARA LER:
+- Cada campo de texto e lido em segundos por alguem olhando pra uma tela, nao
+  lido com calma como um relatorio. Escreva como manchete/bullet point, nunca
+  como paragrafo.
+- Frases curtas, diretas, no maximo ~18 palavras. Se a ideia precisar de mais
+  que isso, corte para o que realmente importa — o aprofundamento fica no
+  material de apoio (documento separado, esse sim pode ser mais completo).
+- Prefira frases de efeito e numeros concretos a explicacoes longas. Quem le
+  o slide precisa entender a ideia central no primeiro olhar.
 `;
 
 const ETAPAS_BRIEF = `
@@ -126,9 +136,16 @@ Responda SOMENTE com um objeto JSON valido, sem markdown, no formato exato:
 }
 
 Regras:
-- "materialApoio.scriptLigacao" e o script FINAL, pronto para uso, nao um exemplo
-  de pratica — deve ser diretamente utilizavel pelo time do cliente na proxima
-  ligacao real.
+- "etapa1.dores[].titulo": 3 a 6 palavras, tipo manchete (ex.: "Follow-up perdido
+  depois de 48h"). "etapa1.dores[].detalhe": uma frase curta (ate ~15 palavras)
+  com o dado concreto por tras da dor — nao um paragrafo explicativo.
+- "etapa1.processoAtual.descricao": no maximo 2 frases curtas.
+- "etapa2.estrategiasExecutadas[].descricao": uma frase curta (ate ~15 palavras).
+  "resultado": o numero ou fato que prova o efeito, tambem curto.
+- "materialApoio" e a UNICA parte que pode ser mais completa e detalhada — e o
+  documento de referencia, nao o slide. "scriptLigacao" e o script FINAL, pronto
+  para uso, nao um exemplo de pratica — deve ser diretamente utilizavel pelo
+  time do cliente na proxima ligacao real.
 - "cronogramaFollowup" tem entre 4 e 8 linhas cobrindo pelo menos 15 dias corridos
   apos o primeiro contato, com pelo menos uma reativacao (contato depois de
   silencio do lead).`;
@@ -192,8 +209,17 @@ Regras:
   os exemplos reais de WhatsApp abaixo, adaptando so o necessario; se nao houver
   exemplo real, construa uma simulacao plausivel para pratica e deixe isso
   implicito no "contexto" (ex.: "Cenario de pratica — objecao de preco").
-  Sempre a mensagem PARTE DO CONSULTOR abrindo o roleplay.
-- "roleplayLigacao.roteiro" segue sempre as 5 etapas na ordem: Abertura,
+  Sempre a mensagem PARTE DO CONSULTOR abrindo o roleplay. Cada "texto" de
+  mensagem e curto, como mensagem real de WhatsApp (1 a 2 frases, nunca um
+  paragrafo longo).
+- "roleplayWhatsapp.titulo" e "roleplayLigacao.titulo": 3 a 6 palavras, tipo
+  manchete (ex.: "Objecao de preco no orcamento"). "contexto": uma frase curta
+  (ate ~15 palavras) situando o cenario — quem e o cliente, o que motivou a
+  conversa. Nada de paragrafo explicativo, isso e so a legenda do slide.
+- "roleplayLigacao.roteiro": "falaSugerida" e curta e direta, como uma nota de
+  apoio para o vendedor olhar rapido durante a ligacao (nao um texto pronto pra
+  decorar de cor) — frases completas cabem no script de ligacao do material de
+  apoio, aqui e o resumo. Segue sempre as 5 etapas na ordem: Abertura,
   Qualificacao, Apresentacao, Contorno de objecao, Fechamento.
 - Nunca atribua uma fala do roleplay a uma pessoa real do briefing como se fosse
   transcricao literal, a menos que o texto venha de um exemplo real abaixo.

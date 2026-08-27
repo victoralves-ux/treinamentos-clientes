@@ -1,24 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { CenarioLigacao } from "@/lib/schema";
 
 /**
- * Simulacao de ligacao: navega pelas 5 etapas do roteiro uma de cada vez,
- * como se estivesse conduzindo a chamada ao vivo, com a objecao mais comum
- * escondida ate o consultor pedir para revelar.
+ * Simulacao de ligacao: componente controlado — a etapa atual vem do pai
+ * (TreinamentoRenderer), via teclado (setas para os lados) ou pelos botoes
+ * e pills aqui, para o consultor conduzir a chamada no ritmo do treinamento.
  */
-export function CallSimulator({ cenario }: { cenario: CenarioLigacao }) {
-  const [atual, setAtual] = useState(0);
+export function CallSimulator({
+  cenario,
+  stepIndex,
+  onStepChange,
+}: {
+  cenario: CenarioLigacao;
+  stepIndex: number;
+  onStepChange: (i: number) => void;
+}) {
   const [revelarObjecao, setRevelarObjecao] = useState(false);
 
-  const etapa = cenario.roteiro[atual];
-  const ultima = atual === cenario.roteiro.length - 1;
+  useEffect(() => setRevelarObjecao(false), [stepIndex]);
 
-  function ir(delta: number) {
-    setRevelarObjecao(false);
-    setAtual((a) => Math.max(0, Math.min(cenario.roteiro.length - 1, a + delta)));
-  }
+  const etapa = cenario.roteiro[stepIndex];
+  const ultima = stepIndex === cenario.roteiro.length - 1;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_minmax(320px,440px)] lg:items-center">
@@ -38,15 +42,12 @@ export function CallSimulator({ cenario }: { cenario: CenarioLigacao }) {
             <button
               key={i}
               type="button"
-              onClick={() => {
-                setAtual(i);
-                setRevelarObjecao(false);
-              }}
+              onClick={() => onStepChange(i)}
               className="rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors"
               style={
-                i === atual
+                i === stepIndex
                   ? { background: "var(--app-accent)", color: "#0a0a0a" }
-                  : i < atual
+                  : i < stepIndex
                     ? { background: "#232323", color: "#ccc" }
                     : { background: "transparent", border: "1px solid #333", color: "#777" }
               }
@@ -62,7 +63,7 @@ export function CallSimulator({ cenario }: { cenario: CenarioLigacao }) {
         style={{ background: "#101010", border: "1px solid #262626", borderRadius: "18px" }}
       >
         <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--app-accent)" }}>
-          {atual + 1}/{cenario.roteiro.length} · {etapa.etapa}
+          {stepIndex + 1}/{cenario.roteiro.length} · {etapa.etapa}
         </p>
         <p className="text-[15px] leading-relaxed text-white">{etapa.falaSugerida}</p>
 
@@ -93,8 +94,8 @@ export function CallSimulator({ cenario }: { cenario: CenarioLigacao }) {
         <div className="mt-2 flex justify-between">
           <button
             type="button"
-            onClick={() => ir(-1)}
-            disabled={atual === 0}
+            onClick={() => onStepChange(Math.max(0, stepIndex - 1))}
+            disabled={stepIndex === 0}
             className="px-4 py-2 text-xs font-semibold disabled:opacity-30"
             style={{ border: "1px solid #333", color: "#ccc", borderRadius: "8px" }}
           >
@@ -102,7 +103,7 @@ export function CallSimulator({ cenario }: { cenario: CenarioLigacao }) {
           </button>
           <button
             type="button"
-            onClick={() => ir(1)}
+            onClick={() => onStepChange(Math.min(cenario.roteiro.length - 1, stepIndex + 1))}
             disabled={ultima}
             className="px-4 py-2 text-xs font-bold disabled:opacity-30"
             style={{ background: "var(--app-accent)", color: "#0a0a0a", borderRadius: "8px" }}

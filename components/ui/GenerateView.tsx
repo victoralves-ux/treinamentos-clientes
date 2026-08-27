@@ -232,6 +232,13 @@ export function GenerateView({
             >
               BAIXAR .PPTX (EDITÁVEL)
             </a>
+            <a
+              href={`/api/treinamentos/${id}/export-pdf`}
+              className="px-6 py-3 text-sm font-bold"
+              style={{ background: "var(--app-panel-2)", border: "1px solid var(--app-border)", borderRadius: "10px" }}
+            >
+              BAIXAR MANUAL EM PDF
+            </a>
             <button
               type="button"
               onClick={() => {
