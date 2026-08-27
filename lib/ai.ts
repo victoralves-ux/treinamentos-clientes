@@ -64,19 +64,71 @@ export function activeProvider(): Provider | null {
   return null;
 }
 
+/**
+ * Erro mais comum de modelo gerando JSON com texto real dentro (conversa de
+ * WhatsApp, por exemplo): escrever uma quebra de linha literal dentro de uma
+ * string em vez de "\n" escapado, o que quebra o JSON.parse na hora. Percorre
+ * o texto sabendo quando esta dentro de uma string (respeitando escapes) e
+ * so escapa ali dentro.
+ */
+function escapeRawNewlinesInStrings(text: string): string {
+  let out = "";
+  let inString = false;
+  let escaped = false;
+  for (const ch of text) {
+    if (inString) {
+      if (escaped) {
+        out += ch;
+        escaped = false;
+      } else if (ch === "\\") {
+        out += ch;
+        escaped = true;
+      } else if (ch === '"') {
+        out += ch;
+        inString = false;
+      } else if (ch === "\n") {
+        out += "\\n";
+      } else if (ch === "\r") {
+        out += "\\r";
+      } else if (ch === "\t") {
+        out += "\\t";
+      } else {
+        out += ch;
+      }
+    } else {
+      if (ch === '"') inString = true;
+      out += ch;
+    }
+  }
+  return out;
+}
+
 function extractJson(text: string): unknown {
-  const trimmed = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  const trimmed = escapeRawNewlinesInStrings(
+    text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim(),
+  );
   try {
     return JSON.parse(trimmed);
-  } catch {
+  } catch (primeiroErro) {
     // Modelos as vezes escrevem uma frase antes do objeto: recorta do primeiro
     // "{" ate o ultimo "}" e tenta de novo.
     const start = trimmed.indexOf("{");
     const end = trimmed.lastIndexOf("}");
-    if (start === -1 || end <= start) throw new ParseError("A IA não devolveu JSON válido.");
+    if (start === -1 || end <= start) {
+      console.error("[extractJson] JSON invalido, sem chaves. Texto:\n", text.slice(0, 4000));
+      throw new ParseError("A IA não devolveu JSON válido.");
+    }
     try {
       return JSON.parse(trimmed.slice(start, end + 1));
     } catch (err) {
+      console.error(
+        "[extractJson] JSON invalido. Erro 1:",
+        primeiroErro instanceof Error ? primeiroErro.message : primeiroErro,
+        "Erro 2:",
+        err instanceof Error ? err.message : err,
+        "\nTexto (ate 6000 chars):\n",
+        trimmed.slice(0, 6000),
+      );
       throw new ParseError(err instanceof Error ? err.message : "JSON inválido");
     }
   }
