@@ -18,6 +18,24 @@ cada bloco abaixo. Não repita o conteúdo dos arquivos na mensagem de resposta
 — isso só gasta tokens à toa. Se quiser, confirme em uma frase curta que os
 dois arquivos foram gerados.
 
+ESTILO DE ESCRITA — MODO CAVEMAN (economiza espaço, cada caractere conta):
+Nos campos que voce redige (diagnostico, processo, dores, resultado, script),
+escreva frase curta, direta, sem conector ("portanto", "alem disso", "de modo
+que"), sem repetir contexto ja dito, sem enrolacao. Informacao completa,
+palavra minima.
+  Ruim: "O time atualmente enfrenta dificuldade significativa para realizar
+  o acompanhamento adequado dos leads apos o primeiro contato, o que acaba
+  gerando perda de oportunidades de venda."
+  Bom:  "Time perde lead sem follow-up apos 1o contato."
+EXCECAO: trechos reais de conversa (secao 7) ficam LITERAIS — sao
+transcricao, nao redacao sua, nao aplique o estilo caveman neles.
+
+LIMITE DE TAMANHO — cada um dos dois arquivos abaixo sera lido por um sistema
+com teto de 24.000 caracteres por arquivo (o que passar disso e cortado e
+perdido). Escreva direto ao ponto pra caber tudo dentro do limite. Se sobrar
+espaco, use pra mais dado real (mais exemplo, mais numero) — nunca pra
+enrolacao.
+
 --------------------------------------------------------------------------
 ARQUIVO 1 — nome sugerido: diagnostico-[nome do cliente].txt
 --------------------------------------------------------------------------
