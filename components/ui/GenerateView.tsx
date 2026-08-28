@@ -225,13 +225,13 @@ export function GenerateView({
             >
               ABRIR APRESENTAÇÃO
             </a>
-            <a
-              href={`/api/treinamentos/${id}/export`}
+            <Link
+              href={`/treinamento/${id}/editar`}
               className="px-6 py-3 text-sm font-bold"
               style={{ background: "var(--app-panel-2)", border: "1px solid var(--app-border)", borderRadius: "10px" }}
             >
-              BAIXAR .PPTX (EDITÁVEL)
-            </a>
+              REVISAR E EDITAR
+            </Link>
             <a
               href={`/api/treinamentos/${id}/export-pdf`}
               className="px-6 py-3 text-sm font-bold"
@@ -245,6 +245,13 @@ export function GenerateView({
               style={{ background: "var(--app-panel-2)", border: "1px solid var(--app-border)", borderRadius: "10px" }}
             >
               BAIXAR GUIA DO CONSULTOR (.TXT)
+            </a>
+            <a
+              href={`/api/treinamentos/${id}/export-contexto`}
+              className="px-6 py-3 text-sm font-bold"
+              style={{ background: "var(--app-panel-2)", border: "1px solid var(--app-border)", borderRadius: "10px" }}
+            >
+              EXPORTAR PARA O PROJECT DO CLIENTE
             </a>
             <button
               type="button"

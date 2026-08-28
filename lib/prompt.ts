@@ -24,6 +24,28 @@ ISTO E UM SLIDE PROJETADO NA TELA, NAO UM DOCUMENTO PARA LER:
   material de apoio (documento separado, esse sim pode ser mais completo).
 - Prefira frases de efeito e numeros concretos a explicacoes longas. Quem le
   o slide precisa entender a ideia central no primeiro olhar.
+
+PERSONALIZACAO OBRIGATORIA — PROIBIDO SER GENERICO:
+- Este treinamento e para UM cliente especifico. O time dele precisa sair
+  da apresentacao com a sensacao de "isso foi estudado pro nosso caso", nunca
+  "isso serviria pra qualquer empresa do nosso segmento".
+- Cada dor, estrategia e indicador precisa ter lastro especifico e rastreavel
+  no briefing abaixo: um numero, o nome de uma ferramenta citada, uma situacao
+  real, um trecho de conversa. Frase generica de treinamento comercial
+  ("melhore seu funil", "fortaleca o relacionamento com o cliente") e proibida
+  se nao estiver amarrada a um dado concreto deste briefing.
+- Se o briefing nao tiver informacao especifica suficiente para um campo,
+  NAO preencha com algo generico so para nao deixar vazio. Um treinamento com
+  2 dores reais e especificas vale mais que um com 4, sendo 2 delas genericas
+  ou repetidas. Prefira menos itens, todos reais, a mais itens para parecer
+  completo.
+- Isso vale com forca redobrada para "etapa2.indicadores": NAO inclua "tempo
+  de tela", "taxa de conversao" ou qualquer outro indicador so porque sao
+  comuns no segmento do cliente — cada indicador incluido precisa ter um
+  valor real de "atual" vindo do briefing deste cliente especifico. Se o
+  briefing nao trouxe tempo de tela, por exemplo, o indicador "tempo de tela"
+  simplesmente nao aparece nesta apresentacao — nunca aparece com o campo
+  "atual" vazio so para preencher espaco.
 `;
 
 const ETAPAS_BRIEF = `
@@ -37,8 +59,11 @@ se reconhecer no diagnostico antes de ouvir a solucao.
 
 ETAPA 2 — DIRECIONAMENTO TATICO:
 Mostra o que ja foi executado (estrategias) e os indicadores que provam o efeito
-disso — tempo de tela com as pessoas e taxa de conversao sao os dois indicadores
-centrais, mas inclua qualquer outro indicador presente no briefing.
+disso. Tempo de tela com as pessoas e taxa de conversao sao os indicadores mais
+comuns nesse tipo de treinamento, mas so entram se o briefing deste cliente
+trouxer um valor real para eles — do contrario, entra qualquer outro indicador
+que o briefing efetivamente tiver, e se nao houver nenhum indicador com dado
+real, a lista fica vazia.
 
 ETAPA 3 — TREINAMENTO TATICO:
 Roleplay interativo. Cenarios de simulacao de conversa no WhatsApp (formato de
@@ -61,6 +86,12 @@ ${ETAPAS_BRIEF}
 Sua tarefa agora e so planejar o ESCOPO: quantas dores, quantas estrategias e
 quantos cenarios de roleplay fazem sentido dado o volume de informacao
 disponivel. Nao escreva o conteudo final ainda.
+
+O numero de cada item deve refletir quantos itens REAIS e ESPECIFICOS este
+cliente tem no briefing — nunca um numero redondo escolhido para parecer
+completo. Se o briefing so sustenta 1 dor especifica com dado real, o outline
+e 1, nao 3. Se nao houver nenhuma estrategia ja executada, o outline de
+estrategias e 0.
 
 Responda SOMENTE com JSON valido, no formato:
 {
@@ -119,7 +150,7 @@ Responda SOMENTE com um objeto JSON valido, sem markdown, no formato exato:
   },
   "etapa2": {
     "estrategiasExecutadas": [ { "nome": "", "descricao": "", "resultado": "" } ],
-    "indicadores": [ { "label": "Tempo de tela", "atual": "", "meta": "", "variacao": "" } ]
+    "indicadores": [ { "label": "", "atual": "", "meta": "", "variacao": "" } ]
   },
   "materialApoio": {
     "scriptLigacao": {
@@ -142,6 +173,10 @@ Regras:
 - "etapa1.processoAtual.descricao": no maximo 2 frases curtas.
 - "etapa2.estrategiasExecutadas[].descricao": uma frase curta (ate ~15 palavras).
   "resultado": o numero ou fato que prova o efeito, tambem curto.
+- "etapa2.indicadores": um indicador so entra na lista se o briefing tiver um
+  valor real para "atual". Nunca inclua "tempo de tela", "taxa de conversao"
+  ou qualquer outro indicador com "atual" vazio ou inventado — se o briefing
+  nao trouxer nenhum indicador com dado real, "indicadores" e uma lista vazia.
 - "materialApoio" e a UNICA parte que pode ser mais completa e detalhada — e o
   documento de referencia, nao o slide. "scriptLigacao" e o script FINAL, pronto
   para uso, nao um exemplo de pratica — deve ser diretamente utilizavel pelo

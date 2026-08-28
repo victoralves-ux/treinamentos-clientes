@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-/** Publico, igual ao export de .pptx: /t/[slug] nao exige login. */
+/** Publico: /t/[slug] nao exige login. */
 export async function GET(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   try {

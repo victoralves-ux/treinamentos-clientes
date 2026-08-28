@@ -27,11 +27,14 @@ type SetRef = (i: number) => (el: HTMLElement | null) => void;
  * cliente rola com o mouse, para as duas formas de navegar ficarem em sincronia.
  */
 export function TreinamentoRenderer({ spec, slug }: { spec: TreinamentoSpec; slug: string }) {
+  // So exibe indicador com dado real — nunca um indicador vazio so preenchendo espaco.
+  const indicadoresValidos = spec.etapa2.indicadores.filter((i) => i.atual);
+
   const slideKinds = useMemo<SlideKind[]>(() => {
     const kinds: SlideKind[] = [{ type: "other" }, { type: "other" }];
     if (spec.etapa1.dores.length) kinds.push({ type: "other" });
     if (spec.etapa2.estrategiasExecutadas.length) kinds.push({ type: "other" });
-    if (spec.etapa2.indicadores.length) kinds.push({ type: "other" });
+    if (indicadoresValidos.length) kinds.push({ type: "other" });
     kinds.push({ type: "other" });
     spec.etapa3.roleplayWhatsapp.forEach((_, i) => kinds.push({ type: "wa", scenario: i }));
     spec.etapa3.roleplayLigacao.forEach((_, i) => kinds.push({ type: "lig", scenario: i }));
@@ -184,10 +187,10 @@ export function TreinamentoRenderer({ spec, slug }: { spec: TreinamentoSpec; slu
         </Section>
       ) : null}
 
-      {spec.etapa2.indicadores.length ? (
+      {indicadoresValidos.length ? (
         <Section slideIndex={nextIndex()} setRef={setRef} eyebrow="Etapa 2 · Direcionamento tático" title="Indicadores">
           <div className="grid gap-5 sm:grid-cols-3">
-            {spec.etapa2.indicadores.map((ind, i) => (
+            {indicadoresValidos.map((ind, i) => (
               <div key={i} className="p-6" style={{ background: "#131313", border: "1px solid #262626", borderRadius: "14px" }}>
                 <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--app-muted)" }}>
                   {ind.label}
@@ -381,16 +384,9 @@ function MaterialApoioSection({
 
       <div className="mt-10 flex flex-wrap gap-3">
         <a
-          href={`/t/${slug}/export`}
-          className="inline-block w-fit px-6 py-3 text-sm font-bold"
-          style={{ background: "var(--app-accent)", color: "#0a0a0a", borderRadius: "10px" }}
-        >
-          BAIXAR APRESENTAÇÃO EM .PPTX
-        </a>
-        <a
           href={`/t/${slug}/export-pdf`}
           className="inline-block w-fit px-6 py-3 text-sm font-bold"
-          style={{ background: "var(--app-panel-2)", border: "1px solid var(--app-border)", color: "var(--app-text)", borderRadius: "10px" }}
+          style={{ background: "var(--app-accent)", color: "#0a0a0a", borderRadius: "10px" }}
         >
           BAIXAR MANUAL EM PDF
         </a>

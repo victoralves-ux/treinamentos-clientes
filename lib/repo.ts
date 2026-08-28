@@ -151,6 +151,14 @@ export async function getTreinamentoAdmin(id: string) {
   return (data as TreinamentoRow) ?? null;
 }
 
+/** Usado pelo editor do consultor — atualiza so o spec, com RLS (dono do treinamento). */
+export async function updateTreinamentoSpec(id: string, spec: TreinamentoSpec) {
+  const sb = await supabaseServer();
+  const { data, error } = await sb.from("treinamentos").update({ spec }).eq("id", id).select().single();
+  if (error) throw new Error(error.message);
+  return data as TreinamentoRow;
+}
+
 export async function deleteTreinamento(id: string) {
   const sb = await supabaseServer();
   const { error } = await sb.from("treinamentos").delete().eq("id", id);

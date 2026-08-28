@@ -8,8 +8,7 @@ import type { TreinamentoSpec } from "./schema";
  * dores, indicadores, script de ligacao completo e cronograma de follow-up.
  * O aprofundamento fica nos slides; aqui e so o que precisa ficar registrado.
  *
- * pdfkit desenha o PDF direto (sem navegador headless), leve e rapido —
- * mesmo racional do exportador de .pptx.
+ * pdfkit desenha o PDF direto (sem navegador headless), leve e rapido.
  */
 const PRETO = "#0A0A0A";
 const VERMELHO = "#E0263F";
@@ -127,9 +126,10 @@ export async function exportTreinamentoPdf(spec: TreinamentoSpec): Promise<Buffe
     }
   }
 
-  if (spec.etapa2.indicadores.length) {
+  const indicadoresValidos = spec.etapa2.indicadores.filter((i) => i.atual);
+  if (indicadoresValidos.length) {
     tituloSecao("Indicadores que provam o resultado");
-    for (const ind of spec.etapa2.indicadores) {
+    for (const ind of indicadoresValidos) {
       const linha = [ind.label, ind.atual && `atual: ${ind.atual}`, ind.meta && `meta: ${ind.meta}`]
         .filter(Boolean)
         .join("  —  ");

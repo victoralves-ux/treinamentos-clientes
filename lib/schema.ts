@@ -3,7 +3,7 @@ import { z } from "zod";
 /**
  * TreinamentoSpec e o contrato entre a IA e a camada de renderizacao.
  * A IA nunca escreve HTML: preenche esta estrutura tipada, e os componentes
- * React (e o exportador de .pptx) transformam isso em apresentacao.
+ * React (e os exportadores de PDF/txt) transformam isso em apresentacao.
  *
  * As 3 etapas seguem o roteiro fixo do treinamento comercial da Pulso:
  * 1) conexao — processo atual do cliente e as dores dele

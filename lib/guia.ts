@@ -83,11 +83,12 @@ export function gerarGuiaConsultor(spec: TreinamentoSpec): string {
     );
   }
 
-  if (spec.etapa2.indicadores.length) {
+  const indicadoresValidos = spec.etapa2.indicadores.filter((i) => i.atual);
+  if (indicadoresValidos.length) {
     partes.push(
       bloco(
         `SLIDE ${slide()} — INDICADORES  (Etapa 2 · Direcionamento tático)`,
-        spec.etapa2.indicadores.flatMap((ind) => [
+        indicadoresValidos.flatMap((ind) => [
           `${ind.label}: atual ${ind.atual}${ind.meta ? `, meta ${ind.meta}` : ""}`,
           ind.variacao ? `   ${ind.variacao}` : null,
         ]),
@@ -132,8 +133,8 @@ export function gerarGuiaConsultor(spec: TreinamentoSpec): string {
   const script = spec.materialApoio.scriptLigacao;
   partes.push(
     bloco(`SLIDE ${slide()} — MATERIAL DE APOIO`, [
-      "Diga ao cliente: o manual de bolso em PDF e a apresentação em .pptx editável",
-      "estão disponíveis para download ao final desta página.",
+      "Diga ao cliente: o manual de bolso em PDF está disponível para download",
+      "ao final desta página.",
       "",
       "Script de ligação — resumo para você conduzir a conversa final com o time:",
       script.abertura ? `  Abertura: ${script.abertura}` : null,

@@ -15,12 +15,12 @@ Segue o mesmo padrão do `gerador-sites` e do `gerador-criativos`.
 | Login | **Supabase Auth** (e-mail + senha, domínio restrito) |
 | IA | Gemini ou Anthropic (chave em variável de ambiente) |
 | Apresentação publicada | rota dinâmica `/t/<slug>` do próprio app |
-| Exportação | `.pptx` gerado no servidor com `pptxgenjs` (editável na hora, arquivo leve) |
+| Exportação | manual de bolso em **PDF** (`pdfkit`), guia do consultor e resumo para o Project, ambos em `.txt` — sem navegador headless, arquivos leves |
 
 O agente **não gera HTML solto**: ele preenche um contrato tipado (`TreinamentoSpec`, zod) que a
-camada de componentes React transforma em apresentação, e o mesmo contrato alimenta o exportador de
-`.pptx`. A identidade visual (preto e vermelho da Pulso) é **fixa** — não há tema por cliente, ao
-contrário do gerador de sites.
+camada de componentes React transforma em apresentação, e o mesmo contrato alimenta os exportadores.
+A identidade visual (preto e vermelho da Pulso) é **fixa** — não há tema por cliente, ao contrário do
+gerador de sites.
 
 ```
 Formulário / material bruto → Briefing estruturado (contexto) → Plano (escopo) → Conteúdo (3 etapas)
@@ -40,20 +40,27 @@ principal responde 503 (sobrecarga).
    mensagem por mensagem) e simulação de ligação (roteiro navegável por etapa).
 
 Depois das 3 etapas, a apresentação publicada mostra o **material de apoio**: script de ligação
-completo e cronograma de cadência de follow-up com exemplos de reativação — e o botão para baixar
-tudo em `.pptx`.
+completo e cronograma de cadência de follow-up com exemplos de reativação — e o botão para baixar o
+manual de bolso em PDF.
+
+O consultor pode revisar e editar o conteúdo gerado (texto e ordem dos itens/slides) antes de
+apresentar, em `/treinamento/[id]/editar`, e depois exportar um resumo em `.txt` para colar de volta
+no Project do Claude do cliente, mantendo o histórico do que já foi apresentado.
 
 ## De onde vem o conteúdo
 
 Tudo que entra na apresentação vem de um briefing estruturado (`lib/context.ts`), extraído por IA de
 material bruto do cliente — atas de reunião, protocolos internos, trechos reais de conversa no
 WhatsApp, transcrições de ligação. A regra é a mesma dos outros geradores da Pulso: **nunca
-inventar**. Sem informação no material, o campo fica vazio.
+inventar**. Sem informação no material, o campo (ou o item da lista, como um indicador sem dado real)
+simplesmente não aparece — nunca fica vazio só para preencher espaço.
 
 O jeito recomendado de preparar esse material: copiar o prompt em `lib/prompt-consultor.ts` (também
 disponível para copiar/baixar direto na tela de "Novo treinamento") e colar no **Project do Claude**
-do cliente, que já tem atas, protocolos e dados carregados. A resposta vira o arquivo `.txt` que é
-enviado no formulário.
+do cliente, que já tem atas, protocolos e dados carregados. O Claude gera dois arquivos `.txt` para
+download (diagnóstico e execução/exemplos) — cada um sobe num campo separado no formulário, analisados
+em sequência (`/api/context/diagnostico` e `/api/context/execucao`) para não estourar o teto de 60s da
+função serverless num documento só.
 
 ## Setup
 
@@ -110,16 +117,17 @@ deploy automático a cada push.
 | `app/page.tsx` | Dashboard com filtros |
 | `app/novo` | Formulário do cliente + upload de material bruto |
 | `app/treinamento/[id]` | Geração (SSE) e resultado |
+| `app/treinamento/[id]/editar` | Editor: texto e reordenação de itens/slides |
 | `app/t/[slug]` | Apresentação publicada (modo tela cheia, sem login) |
-| `app/t/[slug]/export` | Download público do `.pptx` |
-| `lib/context.ts` | Extração do briefing a partir do material bruto |
+| `app/t/[slug]/export-pdf` | Download público do manual de bolso em PDF |
+| `lib/context.ts` | Extração do briefing a partir do material bruto (dois arquivos) |
 | `lib/schema.ts` | Contrato tipado da apresentação (`TreinamentoSpec`) |
 | `lib/pipeline.ts` | Orquestração da geração (plano → conteúdo → validação) |
-| `lib/pptx.ts` | Exportação para `.pptx` |
-| `components/treinamento/` | Renderização das 3 etapas, incluindo os simuladores de WhatsApp e ligação |
+| `lib/pdf.ts` | Exportação do manual de bolso em PDF |
+| `lib/guia.ts` | Roteiro do consultor (o que falar em cada slide) em `.txt` |
+| `lib/exportar-contexto.ts` | Resumo do treinamento para colar de volta no Project do Claude |
+| `components/treinamento/` | Renderização das 3 etapas (incluindo os simuladores de WhatsApp e ligação) e o editor |
 
 ## Fora do escopo desta fase
 
-Editor pós-geração (como o do `gerador-sites`), upload de imagens/logo do cliente — a identidade
-visual é sempre a da Pulso, fixa — e domínio próprio. A modelagem já comporta um editor futuro:
-bastaria adicionar uma tabela de versões, como em `gerador-sites`.
+Upload de imagens/logo do cliente — a identidade visual é sempre a da Pulso, fixa — e domínio próprio.
