@@ -10,11 +10,12 @@ export interface TreinamentoCardData {
   segmento: string;
   consultant: string;
   createdAt: string;
-  hasSpec: boolean;
 }
 
 export function TreinamentoCard({ treinamento: t }: { treinamento: TreinamentoCardData }) {
-  const href = t.hasSpec ? `/t/${t.slug}` : `/treinamento/${t.id}`;
+  // Sempre leva para o painel do treinamento (não direto pra apresentação
+  // publica): de la da pra abrir a apresentacao, editar, exportar etc.
+  const href = `/treinamento/${t.id}`;
   return (
     <Link
       href={href}

@@ -92,7 +92,6 @@ export default async function Dashboard({
                   segmento: t.business?.segmento ?? "",
                   consultant: t.profiles?.name || t.profiles?.email || "—",
                   createdAt: t.created_at,
-                  hasSpec: Boolean(t.spec),
                 }}
               />
             );
