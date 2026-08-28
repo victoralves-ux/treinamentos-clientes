@@ -239,6 +239,13 @@ export function GenerateView({
             >
               BAIXAR MANUAL EM PDF
             </a>
+            <a
+              href={`/api/treinamentos/${id}/export-guia`}
+              className="px-6 py-3 text-sm font-bold"
+              style={{ background: "var(--app-panel-2)", border: "1px solid var(--app-border)", borderRadius: "10px" }}
+            >
+              BAIXAR GUIA DO CONSULTOR (.TXT)
+            </a>
             <button
               type="button"
               onClick={() => {
