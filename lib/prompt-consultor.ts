@@ -1,40 +1,44 @@
 /**
- * Prompt pronto para colar no Project do Claude que ja tem o material do
+ * Prompt pronto para colar no Project do Claude que já tem o material do
  * cliente (atas, protocolos, dados, conversas). Pede para o Claude gerar
  * DOIS arquivos .txt para download, em vez de escrever tudo na conversa —
- * mais rapido, gasta menos tokens, e da certinho com os dois uploads deste
+ * mais rápido, gasta menos tokens, e dá certinho com os dois uploads deste
  * app (ver ContextExtractor.tsx), que analisa um arquivo de cada vez.
  */
-export const PROMPT_CONSULTOR = `Preciso que voce organize as informacoes deste cliente para eu montar um
-treinamento comercial para a equipe dele. Use TUDO que ja esta neste projeto
-(atas de reuniao, protocolos, dados de desempenho, prints ou transcricoes de
-conversas no WhatsApp, transcricoes de ligacao). NAO invente nada: se uma
-informacao nao existir no material deste projeto, deixe em branco ou escreva
+export const PROMPT_CONSULTOR = `Preciso que você organize as informações deste cliente para eu montar um
+treinamento comercial para a equipe dele. Use TUDO que já está neste projeto
+(atas de reunião, protocolos, dados de desempenho, prints ou transcrições de
+conversas no WhatsApp, transcrições de ligação). NÃO invente nada: se uma
+informação não existir no material deste projeto, deixe em branco ou escreva
 "não informado".
 
-IMPORTANTE — nao escreva esse conteudo na conversa. Gere DIRETAMENTE DOIS
+IMPORTANTE — não escreva esse conteúdo na conversa. Gere DIRETAMENTE DOIS
 ARQUIVOS .txt para eu baixar (use a ferramenta de criar arquivo), um para
 cada bloco abaixo. Não repita o conteúdo dos arquivos na mensagem de resposta
 — isso só gasta tokens à toa. Se quiser, confirme em uma frase curta que os
 dois arquivos foram gerados.
 
-ESTILO DE ESCRITA — MODO CAVEMAN (economiza espaço, cada caractere conta):
-Nos campos que voce redige (diagnostico, processo, dores, resultado, script),
-escreva frase curta, direta, sem conector ("portanto", "alem disso", "de modo
-que"), sem repetir contexto ja dito, sem enrolacao. Informacao completa,
-palavra minima.
-  Ruim: "O time atualmente enfrenta dificuldade significativa para realizar
-  o acompanhamento adequado dos leads apos o primeiro contato, o que acaba
-  gerando perda de oportunidades de venda."
-  Bom:  "Time perde lead sem follow-up apos 1o contato."
-EXCECAO: trechos reais de conversa (secao 7) ficam LITERAIS — sao
-transcricao, nao redacao sua, nao aplique o estilo caveman neles.
+PORTUGUÊS CORRETO, SEMPRE (norma culta, padrão ABNT): acentuação e cedilha
+completas — "não", "é", "conversão", "atenção", "serviço" — nunca sem o
+acento ou a cedilha, em nenhum dos dois arquivos.
 
-LIMITE DE TAMANHO — cada um dos dois arquivos abaixo sera lido por um sistema
-com teto de 24.000 caracteres por arquivo (o que passar disso e cortado e
+ESTILO DE ESCRITA — MODO CAVEMAN (economiza espaço, cada caractere conta):
+Nos campos que você redige (diagnóstico, processo, dores, resultado, script),
+escreva frase curta, direta, sem conector ("portanto", "além disso", "de modo
+que"), sem repetir contexto já dito, sem enrolação. Informação completa,
+palavra mínima.
+  Ruim: "O time atualmente enfrenta dificuldade significativa para realizar
+  o acompanhamento adequado dos leads após o primeiro contato, o que acaba
+  gerando perda de oportunidades de venda."
+  Bom:  "Time perde lead sem follow-up após 1º contato."
+EXCEÇÃO: trechos reais de conversa (seção 7) ficam LITERAIS — são
+transcrição, não redação sua, não aplique o estilo caveman neles.
+
+LIMITE DE TAMANHO — cada um dos dois arquivos abaixo será lido por um sistema
+com teto de 24.000 caracteres por arquivo (o que passar disso é cortado e
 perdido). Escreva direto ao ponto pra caber tudo dentro do limite. Se sobrar
-espaco, use pra mais dado real (mais exemplo, mais numero) — nunca pra
-enrolacao.
+espaço, use pra mais dado real (mais exemplo, mais número) — nunca pra
+enrolação.
 
 --------------------------------------------------------------------------
 ARQUIVO 1 — nome sugerido: diagnostico-[nome do cliente].txt
@@ -42,56 +46,56 @@ ARQUIVO 1 — nome sugerido: diagnostico-[nome do cliente].txt
 1) CLIENTE
 - Nome do cliente / empresa:
 - Segmento:
-- Ticket medio (se houver):
-- Consultor(a) responsavel:
+- Ticket médio (se houver):
+- Consultor(a) responsável:
 
 2) PROCESSO COMERCIAL ATUAL
 - Quais canais o time usa para atender lead? (whatsapp, ligacao, call, email, presencial)
-- Descreva o processo atual em um paragrafo (do primeiro contato ate o fechamento):
+- Descreva o processo atual em um parágrafo (do primeiro contato até o fechamento):
 - Ferramentas usadas (CRM, agenda, etc.):
 
-3) DORES DO PROCESSO COMERCIAL (nao dores do produto — dores de VENDA)
-Liste cada dor com um titulo curto e o detalhe, com base no que ja apareceu
-em reunioes ou dados:
+3) DORES DO PROCESSO COMERCIAL (não dores do produto — dores de VENDA)
+Liste cada dor com um título curto e o detalhe, com base no que já apareceu
+em reuniões ou dados:
 - Dor 1:
 - Dor 2:
 - Dor 3:
 
-4) METRICAS / INDICADORES
-Todo numero de desempenho comercial disponivel (nao invente nenhum):
+4) MÉTRICAS / INDICADORES
+Todo número de desempenho comercial disponível (não invente nenhum):
 - Tempo de tela com as pessoas: atual e meta, se houver
-- Taxa de conversao: atual e meta, se houver
-- Outros indicadores relevantes (numero de leads, taxa de resposta, ticket medio etc.)
+- Taxa de conversão: atual e meta, se houver
+- Outros indicadores relevantes (número de leads, taxa de resposta, ticket médio etc.)
 
-5) RESTRICOES E OBSERVACOES
-- Algo que NAO deve aparecer no treinamento?
-- Alguma observacao importante sobre este cliente?
+5) RESTRIÇÕES E OBSERVAÇÕES
+- Algo que NÃO deve aparecer no treinamento?
+- Alguma observação importante sobre este cliente?
 
 --------------------------------------------------------------------------
 ARQUIVO 2 — nome sugerido: execucao-[nome do cliente].txt
 --------------------------------------------------------------------------
-6) ESTRATEGIAS JA EXECUTADAS
-Para cada acao que a Pulso ou o proprio cliente ja tentou:
-- Nome da estrategia | o que foi feito | resultado observado
+6) ESTRATÉGIAS JÁ EXECUTADAS
+Para cada ação que a Pulso ou o próprio cliente já tentou:
+- Nome da estratégia | o que foi feito | resultado observado
 
 7) EXEMPLOS REAIS DE CONVERSA (essencial para o roleplay do treinamento)
-Cole trechos literais — nao resuma:
+Cole trechos literais — não resuma:
 - Trechos de conversas reais no WhatsApp (consultor e cliente, na ordem em que aconteceram)
-- Trechos de transcricao de ligacao real, se houver
+- Trechos de transcrição de ligação real, se houver
 
-8) SCRIPT DE LIGACAO JA USADO (se existir)
+8) SCRIPT DE LIGAÇÃO JÁ USADO (se existir)
 - Abertura:
-- Qualificacao:
-- Apresentacao:
-- Objecoes mais comuns e como o time costuma responder:
+- Qualificação:
+- Apresentação:
+- Objeções mais comuns e como o time costuma responder:
 - Fechamento:
 
-9) CRONOGRAMA DE FOLLOW-UP JA USADO (se existir)
+9) CRONOGRAMA DE FOLLOW-UP JÁ USADO (se existir)
 - Dia | canal | objetivo | mensagem de exemplo
 
 --------------------------------------------------------------------------
 
 Depois que eu revisar os dois arquivos, vou subir cada um no lugar certo do
 gerador de treinamentos da Pulso (arquivo 1 no upload "Diagnóstico", arquivo
-2 no upload "Execução e exemplos"), que le e monta a apresentacao
+2 no upload "Execução e exemplos"), que lê e monta a apresentação
 automaticamente.`;

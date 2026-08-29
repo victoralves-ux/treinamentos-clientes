@@ -3,12 +3,12 @@ import { z } from "zod";
 /**
  * Briefing estruturado de treinamento.
  *
- * O consultor cola o material bruto que ja tem sobre o cliente — atas de
- * reuniao, protocolos internos, trechos de conversas reais no WhatsApp,
- * transcricoes de ligacao, planilhas de metrica exportadas como texto — e a
- * IA organiza. A regra que governa tudo aqui e a mesma dos outros geradores
- * da Pulso: nao inventar. Campo sem informacao no material vira null ou lista
- * vazia — nunca completado com suposicao.
+ * O consultor cola o material bruto que já tem sobre o cliente — atas de
+ * reunião, protocolos internos, trechos de conversas reais no WhatsApp,
+ * transcrições de ligação, planilhas de métrica exportadas como texto — e a
+ * IA organiza. A regra que governa tudo aqui é a mesma dos outros geradores
+ * da Pulso: não inventar. Campo sem informação no material vira null ou lista
+ * vazia — nunca completado com suposição.
  */
 
 const texto = z.string().nullish().transform((v) => (v ?? "").trim() || null);
@@ -114,32 +114,38 @@ export const contextSchema = z.object({
 export type ClientContext = z.infer<typeof contextSchema>;
 
 /**
- * O briefing e extraido em DUAS chamadas de IA, cada uma a partir de um
- * arquivo separado que o consultor sobe (ver lib/prompt-consultor.ts) — nao
- * uma so a partir de um documento unico. Motivo: o mesmo teto de 60s da
- * funcao serverless da Vercel (Hobby) que limita a geracao do treinamento.
- * Dividir em duas chamadas menores, cada uma com seu proprio teto de 24.000
- * caracteres de entrada (lib/extrair-texto.ts), da na pratica ~48.000
+ * O briefing é extraído em DUAS chamadas de IA, cada uma a partir de um
+ * arquivo separado que o consultor sobe (ver lib/prompt-consultor.ts) — não
+ * uma só a partir de um documento único. Motivo: o mesmo teto de 60s da
+ * função serverless da Vercel (Hobby) que limita a geração do treinamento.
+ * Dividir em duas chamadas menores, cada uma com seu próprio teto de 24.000
+ * caracteres de entrada (lib/extrair-texto.ts), dá na prática ~48.000
  * caracteres de material bruto sem truncar nada — o dobro da capacidade de
- * uma chamada unica, sem precisar aumentar o teto de nenhuma delas.
+ * uma chamada única, sem precisar aumentar o teto de nenhuma delas.
  */
-const REGRA_BASE = `Voce organiza material de treinamento comercial para a Pulso, uma
+const REGRA_BASE = `Você organiza material de treinamento comercial para a Pulso, uma
 consultoria que treina equipes de vendas de clientes high ticket.
 
-Recebe material bruto (atas de reuniao, protocolos internos, trechos reais de
-conversas no WhatsApp, transcricoes de ligacao, planilhas de metrica exportadas
+Recebe material bruto (atas de reunião, protocolos internos, trechos reais de
+conversas no WhatsApp, transcrições de ligação, planilhas de métrica exportadas
 como texto) e extrai um briefing estruturado para montar o treinamento.
 
-Responda SOMENTE com um objeto JSON valido, sem markdown e sem comentarios.
-Atencao ao formato: aspas duplas, escape de aspas dentro de textos, sem quebra
-de linha dentro de string e sem virgula sobrando antes de } ou ].
+Responda SOMENTE com um objeto JSON válido, sem markdown e sem comentários.
+Atenção ao formato: aspas duplas, escape de aspas dentro de textos, sem quebra
+de linha dentro de string e sem vírgula sobrando antes de } ou ].
 
-REGRA QUE GOVERNA TUDO: nao inventar. Se a informacao nao estiver no material,
-o campo recebe null (ou lista vazia). Nunca preencha por suposicao, nunca
-complete com frase generica.
+PORTUGUÊS CORRETO, SEMPRE (norma culta, padrão ABNT): acentuação e cedilha
+completas em todo texto livre — "não", "é", "conversão", "atenção", "serviço"
+— nunca sem o acento ou a cedilha. Isso não vale para os nomes dos campos do
+JSON (ficam em inglês/snake_case, sem acento, exatamente como no formato
+abaixo).
+
+REGRA QUE GOVERNA TUDO: não inventar. Se a informação não estiver no material,
+o campo recebe null (ou lista vazia). Nunca preencha por suposição, nunca
+complete com frase genérica.
 
 Ruim:  "O time tem dificuldade em converter leads."
-Bom:   "Taxa de conversao de call para venda caiu de 18% para 11% no ultimo mes."`;
+Bom:   "Taxa de conversão de call para venda caiu de 18% para 11% no último mês."`;
 
 export const contextSchemaDiagnostico = contextSchema.pick({
   cliente: true,
@@ -158,13 +164,13 @@ export const contextSchemaExecucao = contextSchema.pick({
   cronograma_followup_atual: true,
 });
 
-/** Arquivo 1: identificacao do cliente, processo atual, dores e metricas. */
+/** Arquivo 1: identificação do cliente, processo atual, dores e métricas. */
 export function contextPromptDiagnostico(raw: string) {
   const system = `${REGRA_BASE}
 
-Nesta chamada voce extrai SOMENTE o diagnostico do cliente. Estrategias ja
-executadas, exemplos reais de conversa, script de ligacao e cronograma de
-follow-up vem de um segundo arquivo, numa segunda chamada — nao se preocupe
+Nesta chamada você extrai SOMENTE o diagnóstico do cliente. Estratégias já
+executadas, exemplos reais de conversa, script de ligação e cronograma de
+follow-up vêm de um segundo arquivo, numa segunda chamada — não se preocupe
 com eles aqui, mesmo que apareçam de passagem no material.
 
 Formato exato da resposta:
@@ -177,34 +183,34 @@ Formato exato da resposta:
   "observacoes": []
 }
 
-Observacoes por campo:
-- "dores": dores do PROCESSO COMERCIAL do cliente (o que trava a conversao), nao
-  dores do produto/servico dele. Ex.: "time perde o timing do follow-up",
-  "vendedor nao sabe contornar objecao de preco".
-- "canais": so entram canais que o material efetivamente cita, usando exatamente
+Observações por campo:
+- "dores": dores do PROCESSO COMERCIAL do cliente (o que trava a conversão), não
+  dores do produto/serviço dele. Ex.: "time perde o timing do follow-up",
+  "vendedor não sabe contornar objeção de preço".
+- "canais": só entram canais que o material efetivamente cita, usando exatamente
   um destes valores: whatsapp, ligacao, call, email, instagram, sms, presencial,
   outro.
-- "metricas": qualquer numero de desempenho comercial citado — tempo de tela,
-  taxa de conversao, ticket medio, numero de leads, taxa de resposta etc.
-- "restricoes": o que o cliente pediu para nao fazer ou nao usar no treinamento.`;
+- "metricas": qualquer número de desempenho comercial citado — tempo de tela,
+  taxa de conversão, ticket médio, número de leads, taxa de resposta etc.
+- "restricoes": o que o cliente pediu para não fazer ou não usar no treinamento.`;
 
-  const user = `Material bruto sobre o cliente — arquivo 1 de 2 (diagnostico):\n\n${raw}\n\nExtraia cliente, processo atual, dores, metricas, restricoes e observacoes.`;
+  const user = `Material bruto sobre o cliente — arquivo 1 de 2 (diagnóstico):\n\n${raw}\n\nExtraia cliente, processo atual, dores, métricas, restrições e observações.`;
   return { system, user };
 }
 
-/** Arquivo 2: o que ja foi executado e os exemplos reais de conversa. */
+/** Arquivo 2: o que já foi executado e os exemplos reais de conversa. */
 export function contextPromptExecucao(raw: string) {
   const system = `${REGRA_BASE}
 
-Nesta chamada voce extrai SOMENTE o que ja foi executado e os exemplos reais
-de conversa. Identificacao do cliente, processo atual, dores e metricas vem
-de um primeiro arquivo, ja extraido em outra chamada — nao se preocupe com
+Nesta chamada você extrai SOMENTE o que já foi executado e os exemplos reais
+de conversa. Identificação do cliente, processo atual, dores e métricas vêm
+de um primeiro arquivo, já extraído em outra chamada — não se preocupe com
 eles aqui, mesmo que apareçam de passagem no material.
 
-Preserve numeros, nomes, trechos literais de conversa e termos tecnicos exatamente
+Preserve números, nomes, trechos literais de conversa e termos técnicos exatamente
 como aparecem — sobretudo em "exemplos_whatsapp" e "exemplos_ligacao": esses
-trechos viram a base do roleplay interativo do treinamento, entao precisam ser
-reais, nao parafraseados.
+trechos viram a base do roleplay interativo do treinamento, então precisam ser
+reais, não parafraseados.
 
 Formato exato da resposta:
 {
@@ -215,19 +221,19 @@ Formato exato da resposta:
   "cronograma_followup_atual": [ { "dia": "", "canal": "", "objetivo": null, "mensagem_exemplo": null } ]
 }
 
-Observacoes por campo:
-- "exemplos_whatsapp"/"exemplos_ligacao": so entram trechos que realmente
+Observações por campo:
+- "exemplos_whatsapp"/"exemplos_ligacao": só entram trechos que realmente
   aparecem no material. Sem exemplo real, devolva lista vazia — o roleplay
-  usa esses trechos como base e nao pode receber conversa inventada.
-  LIMITE OBRIGATORIO (a resposta precisa caber num teto de tokens): no maximo
-  3 cenarios em "exemplos_whatsapp", cada um com no maximo 12 mensagens; no
-  maximo 2 cenarios em "exemplos_ligacao", cada "transcricao" com no maximo
+  usa esses trechos como base e não pode receber conversa inventada.
+  LIMITE OBRIGATÓRIO (a resposta precisa caber num teto de tokens): no máximo
+  3 cenários em "exemplos_whatsapp", cada um com no máximo 12 mensagens; no
+  máximo 2 cenários em "exemplos_ligacao", cada "transcricao" com no máximo
   1200 caracteres. Se o material tiver mais conversa real do que isso, escolha
   os trechos mais representativos das dores identificadas — nunca tente
   incluir tudo, e nunca corte uma mensagem ou um objeto no meio: prefira
   devolver menos exemplos completos a arriscar um JSON truncado.`;
 
-  const user = `Material bruto sobre o cliente — arquivo 2 de 2 (execucao e exemplos):\n\n${raw}\n\nExtraia estrategias executadas, exemplos reais de conversa, script de ligacao e cronograma de follow-up.`;
+  const user = `Material bruto sobre o cliente — arquivo 2 de 2 (execução e exemplos):\n\n${raw}\n\nExtraia estratégias executadas, exemplos reais de conversa, script de ligação e cronograma de follow-up.`;
   return { system, user };
 }
 
@@ -253,11 +259,11 @@ export function mergeContext(
 
 /**
  * Teto do briefing injetado no prompt. Sem limite, um material rico gerava um
- * prompt grande o bastante para a chamada estourar o tempo da funcao.
+ * prompt grande o bastante para a chamada estourar o tempo da função.
  */
 const MAX_BRIEFING_CHARS = 3000;
 
-/** Versao curta do briefing, injetada nos prompts de geracao do treinamento. */
+/** Versão curta do briefing, injetada nos prompts de geração do treinamento. */
 export function contextBriefing(ctx: ClientContext): string {
   const linhas: string[] = [];
   const add = (rotulo: string, valor: unknown) => {
@@ -278,23 +284,23 @@ export function contextBriefing(ctx: ClientContext): string {
     if (d.titulo) linhas.push(`- Dor: ${d.titulo}${d.detalhe ? ` — ${d.detalhe.slice(0, 160)}` : ""}`);
   }
   for (const e of ctx.estrategias_executadas ?? []) {
-    if (e.nome) linhas.push(`- Estrategia executada "${e.nome}": ${[e.descricao, e.resultado].filter(Boolean).join(" — ").slice(0, 200)}`);
+    if (e.nome) linhas.push(`- Estratégia executada "${e.nome}": ${[e.descricao, e.resultado].filter(Boolean).join(" — ").slice(0, 200)}`);
   }
   for (const m of ctx.metricas ?? []) {
-    if (m.label) linhas.push(`- Metrica "${m.label}": atual ${m.atual ?? "?"}, meta ${m.meta ?? "?"}${m.variacao ? ` (${m.variacao})` : ""}`);
+    if (m.label) linhas.push(`- Métrica "${m.label}": atual ${m.atual ?? "?"}, meta ${m.meta ?? "?"}${m.variacao ? ` (${m.variacao})` : ""}`);
   }
 
-  add("Restricoes", ctx.restricoes);
-  add("Observacoes", ctx.observacoes);
+  add("Restrições", ctx.restricoes);
+  add("Observações", ctx.observacoes);
 
   const texto = linhas.join("\n");
   return texto.length > MAX_BRIEFING_CHARS ? `${texto.slice(0, MAX_BRIEFING_CHARS)}…` : texto;
 }
 
 /**
- * Exemplos reais de WhatsApp/ligacao formatados para injecao no prompt de
- * conteudo. Ficam fora do resumo curto porque sao a materia-prima do roleplay
- * e precisam chegar literais, nao resumidos.
+ * Exemplos reais de WhatsApp/ligação formatados para injeção no prompt de
+ * conteúdo. Ficam fora do resumo curto porque são a matéria-prima do roleplay
+ * e precisam chegar literais, não resumidos.
  */
 const MAX_EXEMPLOS_CHARS = 6000;
 
@@ -309,17 +315,17 @@ export function contextExemplos(ctx: ClientContext): string {
     if (msgs) blocos.push(`[WhatsApp real${c.titulo ? ` — ${c.titulo}` : ""}]\n${msgs}`);
   }
   for (const c of ctx.exemplos_ligacao ?? []) {
-    if (c.transcricao) blocos.push(`[Ligacao real${c.titulo ? ` — ${c.titulo}` : ""}]\n${c.transcricao}`);
+    if (c.transcricao) blocos.push(`[Ligação real${c.titulo ? ` — ${c.titulo}` : ""}]\n${c.transcricao}`);
   }
   if (ctx.script_ligacao_atual?.abertura || ctx.script_ligacao_atual?.fechamento) {
     const s = ctx.script_ligacao_atual;
     blocos.push(
-      `[Script de ligacao ja usado pelo cliente]\nAbertura: ${s.abertura ?? "-"}\nQualificacao: ${s.qualificacao ?? "-"}\nApresentacao: ${s.apresentacao ?? "-"}\nFechamento: ${s.fechamento ?? "-"}`,
+      `[Script de ligação já usado pelo cliente]\nAbertura: ${s.abertura ?? "-"}\nQualificação: ${s.qualificacao ?? "-"}\nApresentação: ${s.apresentacao ?? "-"}\nFechamento: ${s.fechamento ?? "-"}`,
     );
   }
   if (ctx.cronograma_followup_atual?.length) {
     blocos.push(
-      `[Cronograma de follow-up ja usado]\n${ctx.cronograma_followup_atual
+      `[Cronograma de follow-up já usado]\n${ctx.cronograma_followup_atual
         .map((c) => `Dia ${c.dia ?? "?"} · ${c.canal ?? "?"} · ${c.objetivo ?? ""}`)
         .join("\n")}`,
     );

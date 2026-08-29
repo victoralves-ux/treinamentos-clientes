@@ -38,9 +38,11 @@ export function normalize(raw: unknown, b: Business): unknown {
     spec.etapa1.processoAtual.canais = ["whatsapp", "ligacao", "call"];
   }
 
-  // Roteiro de ligacao sempre nas 5 etapas, na ordem certa: se o modelo
-  // pulou uma, a simulacao interativa fica quebrada no meio.
-  const ORDEM = ["Abertura", "Qualificacao", "Apresentacao", "Contorno de objecao", "Fechamento"];
+  // Roteiro de ligação sempre nas 5 etapas, na ordem certa: se o modelo
+  // pulou uma, a simulação interativa fica quebrada no meio. Precisa bater
+  // exatamente com os valores de "etapa" pedidos em lib/prompt.ts
+  // (contentPrompt2) — inclusive a acentuação.
+  const ORDEM = ["Abertura", "Qualificação", "Apresentação", "Contorno de objeção", "Fechamento"];
   for (const cenario of spec.etapa3?.roleplayLigacao ?? []) {
     if (!Array.isArray(cenario.roteiro)) continue;
     const porEtapa = new Map(cenario.roteiro.map((r: any) => [String(r.etapa ?? "").trim(), r]));
