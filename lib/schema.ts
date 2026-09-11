@@ -137,12 +137,22 @@ export const treinamentoSpecSchema = z.object({
 });
 export type TreinamentoSpec = z.infer<typeof treinamentoSpecSchema>;
 
+/**
+ * Faixa de ticket do cliente — classifica a profundidade e a doutrina do
+ * treinamento (perguntas de qualificação, doutrina de preço, cadência de
+ * follow-up). "high_ticket" e o padrao quando nao ha dado de ticket medio
+ * no briefing, pois e o publico-alvo padrao da Pulso (ver BRAND_BRIEF).
+ */
+export const faixaSchema = z.enum(["volume", "intermediario", "high_ticket"]).catch("high_ticket");
+export type Faixa = z.infer<typeof faixaSchema>;
+
 /** Estrutura devolvida pela primeira chamada de IA (planejamento). */
 export const planSchema = z.object({
   analysis: z.object({
     principaisDores: lista,
     principaisMetricas: lista,
     focoDoTreinamento: texto,
+    faixa: faixaSchema,
   }),
   outline: z
     .object({

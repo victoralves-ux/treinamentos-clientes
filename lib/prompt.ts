@@ -81,9 +81,62 @@ Roleplay interativo. Cenários de simulação de conversa no WhatsApp (formato d
 chat real) e simulação de ligação (roteiro por etapas: abertura, qualificação,
 apresentação, contorno de objeção, fechamento). Use como base os exemplos reais
 do briefing sempre que existirem; quando não houver exemplo real suficiente,
-construa um cenário plausível e genérico para o segmento do cliente, deixando
-claro que é um exemplo de prática — nunca atribua a fala a uma pessoa real sem
-uma fonte no briefing.
+construa um cenário plausível e específico para o segmento do cliente (ver
+MÉTODO DE QUALIFICAÇÃO abaixo), deixando claro que é um exemplo de prática —
+nunca atribua a fala a uma pessoa real sem uma fonte no briefing.
+`;
+
+/**
+ * Faixa de ticket: calibra profundidade de qualificação, doutrina de preço
+ * e cadência de follow-up. Adaptado da régua de ticket usada nos kits
+ * comerciais da Pulso — mesmo princípio: quanto maior o ticket, mais a
+ * venda depende de conversa/consulta e menos de mensagem direta.
+ */
+const FAIXA_BRIEF = `
+FAIXA DE TICKET DO CLIENTE — calibra profundidade e doutrina do treinamento:
+- "volume" (ticket médio do produto/serviço principal abaixo de R$ 1.500):
+  qualificação rápida (1 pergunta central de dor), preço do primeiro contato
+  pode ser informado direto por mensagem — segurar preço em ticket baixo
+  gera atrito e perde lead —, follow-up curto (2 toques).
+- "intermediario" (entre R$ 1.500 e R$ 8.000): qualificação com 2 perguntas
+  (dor + tempo/urgência), preço do serviço principal nunca sai por
+  mensagem — sempre conduz para uma conversa, usando a dor do cliente —,
+  follow-up médio (3 toques).
+- "high_ticket" (acima de R$ 8.000, ou quando o briefing não trouxer ticket
+  médio nenhum — é o público padrão da Pulso): qualificação completa (dor →
+  tempo/tentativas anteriores → impacto/desejo, como conversa genuína,
+  nunca questionário), preço nunca sai por mensagem em hipótese alguma,
+  follow-up mais longo (4 toques, o último entregando algo de valor real —
+  conteúdo, case, dado — antes do encerramento educado).
+`;
+
+/**
+ * Método de qualificação (Dor → Tempo → Impacto), para dar consistência aos
+ * cenários de roleplay quando o briefing não trouxer exemplo real
+ * suficiente. É um MÉTODO, não um script fixo: adapte sempre o vocabulário
+ * ao segmento real do cliente — os exemplos abaixo são só referência de
+ * como aplicar a lógica, nunca texto para copiar literalmente fora do
+ * segmento a que pertencem.
+ */
+const METODO_QUALIFICACAO = `
+MÉTODO DE QUALIFICAÇÃO — DOR → TEMPO → IMPACTO:
+Sem exemplo real suficiente no briefing, construa a qualificação seguindo
+esta lógica, calibrada ao número de perguntas da faixa de ticket:
+1. Dor: o que está incomodando ou motivando o cliente agora, na linguagem
+   do segmento dele — nunca uma pergunta fechada de sim/não.
+2. Tempo/urgência: há quanto tempo isso acontece, o que já tentou antes.
+3. Impacto/desejo: como isso afeta a vida ou o negócio dele; o que faria
+   ele agir agora.
+Referências de aplicação (adapte ao segmento real do cliente — nunca copie
+fora do segmento a que pertencem):
+- Saúde/estética: "O que está te incomodando mais hoje?" → "Há quanto
+  tempo você convive com isso?" → "Isso já te impediu de algo importante
+  por causa disso?"
+- Serviços B2B/consultoria: "O que fez você buscar isso agora?" → "Há
+  quanto tempo esse problema existe na operação?" → "Como isso está
+  afetando o resultado hoje?"
+A pergunta de impacto é a mais importante e a mais fácil de soar artificial
+— deve parecer conversa genuína, nunca formulário.
 `;
 
 export function planPrompt(business: Business) {
@@ -93,10 +146,12 @@ export function planPrompt(business: Business) {
   const system = `Você é o planejador de um gerador de apresentações de treinamento comercial da Pulso.
 ${BRAND_BRIEF}
 ${ETAPAS_BRIEF}
+${FAIXA_BRIEF}
 
-Sua tarefa agora é só planejar o ESCOPO: quantas dores, quantas estratégias e
+Sua tarefa agora é só planejar o ESCOPO: quantas dores, quantas estratégias,
 quantos cenários de roleplay fazem sentido dado o volume de informação
-disponível. Não escreva o conteúdo final ainda.
+disponível, e qual a faixa de ticket do cliente. Não escreva o conteúdo
+final ainda.
 
 O número de cada item deve refletir quantos itens REAIS e ESPECÍFICOS este
 cliente tem no briefing — nunca um número redondo escolhido para parecer
@@ -104,13 +159,19 @@ completo. Se o briefing só sustenta 1 dor específica com dado real, o outline
 é 1, não 3. Se não houver nenhuma estratégia já executada, o outline de
 estratégias é 0.
 
+"faixa": procure um ticket médio explícito no briefing ou no formulário
+(valor do produto/serviço/procedimento principal) e classifique conforme a
+FAIXA DE TICKET acima. Sem esse dado, classifique como "high_ticket".
+
 Responda SOMENTE com JSON válido, no formato:
 {
-  "analysis": { "principaisDores": [], "principaisMetricas": [], "focoDoTreinamento": "" },
+  "analysis": { "principaisDores": [], "principaisMetricas": [], "focoDoTreinamento": "", "faixa": "high_ticket" },
   "outline": { "dores": 3, "estrategias": 2, "cenariosWhatsapp": 2, "cenariosLigacao": 1 },
   "meta": { "titulo": "", "cliente": "", "segmento": "" }
 }
 
+"faixa" é sempre um destes três valores exatos: "volume", "intermediario" ou
+"high_ticket" (sem acento, são valores fixos do sistema, não texto livre).
 "focoDoTreinamento" é uma frase curta dizendo qual é o ganho central que este
 treinamento específico precisa entregar, com base nas dores e métricas do
 briefing. "titulo" é o título da apresentação, ex.: "Treinamento Comercial — {cliente}".`;
@@ -140,6 +201,16 @@ Planeje o escopo do treinamento.`;
  * metade fica bem menor e sobra folga real de tempo.
  */
 
+const AUTOCHECK_ANTI_GENERICO = `
+ANTES DE RESPONDER, VERIFIQUE EM SILÊNCIO (não escreva isso na resposta):
+- Cada dor/estratégia/objeção cita algo específico e rastreável no briefing
+  (um número, uma ferramenta, uma situação real) — nenhuma é frase genérica
+  de treinamento comercial?
+- Nenhum indicador aparece sem valor real de "atual"?
+- O follow-up e as respostas de objeção usam a dor real identificada no
+  briefing, não uma frase genérica como "só passando pra saber"?
+Se alguma resposta for "não", corrija antes de responder.`;
+
 export function contentPrompt1(business: Business, plan: Plan) {
   const ctxParsed = business.context ? contextSchema.safeParse(business.context) : null;
   const briefing = ctxParsed?.success ? contextBriefing(ctxParsed.data) : "";
@@ -149,9 +220,10 @@ comercial da Pulso — etapa 1, etapa 2 e o material de apoio. A etapa 3
 (roleplay) é escrita em outra chamada separada, depois desta.
 ${BRAND_BRIEF}
 ${ETAPAS_BRIEF}
+${FAIXA_BRIEF}
 
-Escopo já definido pelo planejamento: ${plan.outline.dores} dor(es) e
-${plan.outline.estrategias} estratégia(s) executada(s).
+Escopo já definido pelo planejamento: ${plan.outline.dores} dor(es), ${plan.outline.estrategias}
+estratégia(s) executada(s), faixa de ticket "${plan.analysis.faixa}".
 
 Responda SOMENTE com um objeto JSON válido, sem markdown, no formato exato:
 {
@@ -191,13 +263,19 @@ Regras:
 - "materialApoio" é a ÚNICA parte que pode ser mais completa e detalhada — é o
   documento de referência, não o slide. "scriptLigacao" é o script FINAL, pronto
   para uso, não um exemplo de prática — deve ser diretamente utilizável pelo
-  time do cliente na próxima ligação real.
-- "cronogramaFollowup" tem entre 4 e 8 linhas cobrindo pelo menos 15 dias corridos
-  após o primeiro contato, com pelo menos uma reativação (contato depois de
-  silêncio do lead).`;
+  time do cliente na próxima ligação real. Doutrina de preço pela faixa (ver
+  FAIXA DE TICKET acima): respeite exatamente a regra de preço por mensagem
+  da faixa "${plan.analysis.faixa}" deste cliente.
+- "cronogramaFollowup" cobre pelo menos 15 dias corridos após o primeiro
+  contato, com pelo menos uma reativação (contato depois de silêncio do
+  lead). Calibre o número de linhas pela faixa "${plan.analysis.faixa}":
+  volume ~2 toques curtos, intermediario ~3 toques, high_ticket ~4 toques
+  com o último entregando algo de valor real antes do encerramento.
+${AUTOCHECK_ANTI_GENERICO}`;
 
   const user = `Cliente: ${business.cliente}
 Segmento: ${business.segmento || plan.meta.segmento || "-"}
+Faixa de ticket: ${plan.analysis.faixa}
 Foco do treinamento: ${plan.analysis.focoDoTreinamento}
 Dores identificadas: ${plan.analysis.principaisDores.join(" | ") || "-"}
 Métricas identificadas: ${plan.analysis.principaisMetricas.join(" | ") || "-"}
@@ -219,9 +297,12 @@ apresentação de treinamento comercial da Pulso. As etapas 1 e 2 já foram
 escritas antes e estão abaixo, só como contexto — não as repita na resposta.
 ${BRAND_BRIEF}
 ${ETAPAS_BRIEF}
+${FAIXA_BRIEF}
+${METODO_QUALIFICACAO}
 
 Escopo já definido pelo planejamento: ${plan.outline.cenariosWhatsapp} cenário(s)
-de WhatsApp e ${plan.outline.cenariosLigacao} cenário(s) de ligação.
+de WhatsApp e ${plan.outline.cenariosLigacao} cenário(s) de ligação, faixa de
+ticket "${plan.analysis.faixa}".
 
 Responda SOMENTE com um objeto JSON válido, sem markdown, no formato exato:
 {
@@ -253,11 +334,18 @@ Regras:
 - "roleplayWhatsapp.mensagens" alterna consultor/cliente de forma realista, como
   uma conversa de verdade (6 a 14 mensagens por cenário). Priorize reaproveitar
   os exemplos reais de WhatsApp abaixo, adaptando só o necessário; se não houver
-  exemplo real, construa uma simulação plausível para prática e deixe isso
-  implícito no "contexto" (ex.: "Cenário de prática — objeção de preço").
-  Sempre a mensagem PARTE DO CONSULTOR abrindo o roleplay. Cada "texto" de
-  mensagem é curto, como mensagem real de WhatsApp (1 a 2 frases, nunca um
-  parágrafo longo).
+  exemplo real, construa uma simulação plausível para prática (ver MÉTODO DE
+  QUALIFICAÇÃO acima) e deixe isso implícito no "contexto" (ex.: "Cenário de
+  prática — objeção de preço"). Sempre a mensagem PARTE DO CONSULTOR abrindo o
+  roleplay. Cada "texto" de mensagem é curto, como mensagem real de WhatsApp
+  (1 a 2 frases, nunca um parágrafo longo).
+- Se houver mais de 1 cenário de WhatsApp, cada um representa uma SITUAÇÃO DE
+  LEAD diferente — nunca duas variações do mesmo caso. Ex.: um lead direto que
+  testa objeção de preço logo de cara; um lead que demonstrou interesse e
+  sumiu (precisa reengajamento, não cobrança); um lead que visualizou e não
+  respondeu (mensagem leve, sem pressão). Baseie-se nas situações reais do
+  briefing quando existirem; distribua os tipos só quando o briefing sustentar
+  mais de uma.
 - "roleplayWhatsapp.titulo" e "roleplayLigacao.titulo": 3 a 6 palavras, tipo
   manchete (ex.: "Objeção de preço no orçamento"). "contexto": uma frase curta
   (até ~15 palavras) situando o cenário — quem é o cliente, o que motivou a
@@ -267,15 +355,19 @@ Regras:
   decorar de cor) — frases completas cabem no script de ligação do material de
   apoio, aqui é o resumo. "etapa" segue sempre exatamente estes 5 valores,
   nesta ordem e grafia: "Abertura", "Qualificação", "Apresentação", "Contorno
-  de objeção", "Fechamento".
+  de objeção", "Fechamento". A etapa "Qualificação" segue a profundidade da
+  faixa "${plan.analysis.faixa}" (ver FAIXA DE TICKET acima): número de
+  perguntas e tom calibrados a ela.
 - Nunca atribua uma fala do roleplay a uma pessoa real do briefing como se fosse
   transcrição literal, a menos que o texto venha de um exemplo real abaixo.
 - Os cenários devem soar consistentes com as dores da etapa 1 e as
   estratégias da etapa 2 (contexto abaixo) — o roleplay deve treinar
-  exatamente o que essas etapas identificaram.`;
+  exatamente o que essas etapas identificaram.
+${AUTOCHECK_ANTI_GENERICO}`;
 
   const user = `Cliente: ${business.cliente}
 Segmento: ${business.segmento || plan.meta.segmento || "-"}
+Faixa de ticket: ${plan.analysis.faixa}
 
 Etapa 1 e 2 já escritas (contexto, não repita):
 ${JSON.stringify(parcial)}

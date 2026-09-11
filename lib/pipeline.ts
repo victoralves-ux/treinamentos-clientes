@@ -58,7 +58,7 @@ export async function planTreinamento(business: Business, emit: Emit): Promise<P
   emit({
     step: "escopo",
     state: "done",
-    detail: `${plan.outline.dores} dor(es) · ${plan.outline.cenariosWhatsapp} cenário(s) WhatsApp · ${plan.outline.cenariosLigacao} cenário(s) ligação`,
+    detail: `${plan.outline.dores} dor(es) · ${plan.outline.cenariosWhatsapp} cenário(s) WhatsApp · ${plan.outline.cenariosLigacao} cenário(s) ligação · faixa ${plan.analysis.faixa}`,
   });
 
   return plan;
